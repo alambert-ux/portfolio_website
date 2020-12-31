@@ -1,0 +1,377 @@
+---
+date: "2017-10-31T21:28:43-05:00"
+description: "How Do Airline Passengers Feel About Their Providers?"
+draft: false
+image: pic11.jpg
+keywords: ""
+slug: rockefeller
+title: Rockefeller
+
+---
+
+<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+
+
+<div id="the-problem" class="section level1">
+<h1>The Problem</h1>
+<p>Airline carriers receive a high volume of public Tweets daily, which in the most part they need to interact with or address directly both to ensure good customer experience and avoid public humiliation. Tweets vary from positive “thank you” messages to complaints and accusations of “lost luggage”, “delayed flights” and “unfair fees”. Analysing this data in real-time is crucial for Airlines’ customer service teams to address complaints and negative publicity proactively and positively, and make happy passengers feel valued and recognised. These two roles must be balanced, however, and as such it is more important that airlines capture negative reviews with accuracy than it is that they catalogue positive reviews. We discuss what this means for true positive and true negative rates, i.e. sensitivity and specificity. In this case, it is evident that specificity, the true negative rate, must be paramount as we create a dictionary-based classifier to help Airlines to target and address negative reviews online.</p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p>I employ a key dataset of Tweets associated with the public Twitter accounts of a number of prominent US-operating Airlines, scraped directly from Twitter in 2019.</p>
+</div>
+<div id="the-solution" class="section level1">
+<h1>The Solution</h1>
+<div id="how-should-airlines-classify-the-sentiment-of-their-tweets" class="section level3">
+<h3>How Should Airlines Classify the Sentiment of their Tweets?</h3>
+<p><strong>First, the required packages are loaded…</strong></p>
+<pre class="r"><code>#LOAD ALL THE NECESSARY PACKAGES FOR QUESTIONS A, B AND C:
+library(arm)
+library(boot)
+library(pROC)
+library(mfx)
+library(ggplot2)
+library(lme4)
+library(data.table)
+library(Metrics)
+library(sjmisc)
+library(sjPlot)
+library(margins)
+library(quanteda)
+library(glmnet)
+library(ggpubr)</code></pre>
+<p><strong>Next, I clean the dataset and perform a preliminary investigation of word usage…</strong></p>
+<pre class="r"><code>#LOADING THE DATASET (tweets) FOR FURTHER ANALYSIS
+#Load in the correct data files and review using summary(), to understand their structures:
+load(here::here(&#39;data&#39;,&#39;tweets.Rda&#39;))
+
+summary(tweets)
+
+#CREATING A CORPUS OF TWEETS: 
+speechCorpus &lt;- corpus(tweets$text, docvars = tweets)
+
+#CONVERTING THE CORPUS INTO A DOCUMENT-TERM MATRIX (DTM) USING THE dfm() FUNCTION
+dfm.tweets &lt;- dfm(speechCorpus, tolower=T, remove_numbers=T, remove_punct=T, remove = stopwords(&quot;en&quot;))
+dim(dfm.tweets)
+#THIS SHOWS THAT THERE ARE 12,303 UNIQUE WORDS (THE COLUMN DIMENSION OF THE DOCUMENT-TERM MATRIX), CONTAINED IN THE 11,541 RECORDED TWEETS (THE ROW DIMENSION OF THE DOCUMENT-TERM MATRIX)
+
+#I DECIDE TO REMOVE RARE WORDS USED ONLY IN A SINGLE TWEET, AS THEY ARE UNLIKELY TO BE INFORMATIVE ON AGGREGATE
+doc_freq &lt;- docfreq(dfm.tweets)
+dfm.tweets &lt;- dfm.tweets[,doc_freq&gt;1]
+dim(dfm.tweets)
+#THIS SIGNIFICANTLY REDUCES THE NUMBER OF UNIQUE WORDS, FROM 12,303 TO JUST 5,213. THESE ARE WORDS USED IN MORE THAN 1 TWEET, AND THEREFORE WHICH CAN BE USED TO INFORM GENERALISED ASSOCIATIONS BETWEEN WORDS AND NEGATIVE OR POSITIVE SENTIMENT
+
+#I NOW INVESTIGATE WORD USAGE MORE CLOSELY, BOTH BETWEEN AIRLINES AND IN TERMS OF POSITIVE AND NEGATIVE SENTIMENT
+#THE TF-IDF WEIGHTED WORD FREQUENCIES ARE CREATED, BASED ON THE ORIGINAL dfm.tweets DOCUMENT-TERM MATRIX: THIS TF-IDF WEIGHTED MATRIX WILL BE USED FOR ALL SUBSQUENT ANALYSIS FOR SECTION G
+#THIS IS OF COURSE BUILT UPON dfm.tweets, AND SO ONLY INCLUDES WORDS USED IN MORE THAN 1 TWEET
+dfm.tweets.tfidf &lt;- dfm_tfidf(dfm.tweets)
+
+#REVIEWING THE 10 MOST USED WORDS IN THE CORPUS AS A WHOLE
+textstat_frequency(dfm.tweets.tfidf, force=TRUE)[1:10,]</code></pre>
+<p><strong>Now I identify words associated with Negative and Positive Sentiment, plotting these alongside eachother in order of frequency…</strong></p>
+<pre class="r"><code>#I GROUP THE TWEETS BY SENTIMENT AND FIND THE 15 MOST USED WORDS ASSOCIATED WITH EACH SENTIMENT
+by.sentiment &lt;- textstat_frequency(dfm.tweets.tfidf,15,groups=&quot;sentiment&quot;, force=TRUE)
+by.sentiment
+
+#WHICH COMPARES WORD USEAGE BETWEEN POSITIVE AND NEGATIVE SENTIMENT TWEETS
+
+by.sentiment$group &lt;- ifelse(by.sentiment$group==1,&quot;Negative Sentiment&quot;,&quot;Positive Sentiment&quot;)
+
+#ADJUSTMENT OF RELEVANT WORDS: REMOVED  WORDS ARE AIRLINE NAMES, AND EXPRESSIONS WHICH ARE  NEUTRAL: NEITHER POSITIVE NOR NEGATIVE IN NATURE, LARGELY ASSOCIATED WITH SPECIFIC AIRLINES, AIRPORT CODES, OR OTHER JARGON SUCH AS &quot;time&quot;,&quot;flying&quot; and &quot;crew&quot;, WHICH OFFER LITTLE INFORMATION IN TERMS OF WHICH WORDS ARE ACTUALLY ASSOCIATED WITH EITHER POSITIVE OR NEGATIVE SENTIMENT
+#I ATTEMPT TO REMOVE AS FEW WORDS AS POSSIBLE, IN ORDER NOT TO BIAS THE OUTCOME BY MAKING PRESUMPTIONS OF NEUTRALITY/POSITIVE/NEGATIVE SENTIMENT WORDS
+dfm.tweets.tfidf.2 &lt;- dfm_remove(dfm.tweets.tfidf,c(&quot;@united&quot;,&quot;@usairways&quot;,&quot;@americanair&quot;,&quot;@southwestair&quot;,&quot;@jetblue&quot;,&quot;@virginamerica&quot;,&quot;t.co&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;w&quot;,&quot;airline&quot;,&quot;flying&quot;,&quot;flight&quot;,&quot;can&quot;,&quot;plane&quot;,&quot;one&quot;,&quot;flights&quot;,&quot;back&quot;,&quot;gate&quot;,&quot;fly&quot;))
+by.sentiment.2 &lt;- textstat_frequency(dfm.tweets.tfidf.2,15,groups=&quot;sentiment&quot;, force=TRUE)
+
+#THIS IS A PLOT WHICH COMPARES WORD USEAGE BETWEEN POSITIVE AND NEGATIVE SENTIMENT TWEETS BUT ADJUSTS FOR REDUNDANT WORDS/EXPRESSIONS
+by.sentiment.2$group &lt;- ifelse(by.sentiment.2$group==1,&quot;Negative Sentiment&quot;,&quot;Positive Sentiment&quot;)
+ggplot(by.sentiment.2,aes(x=frequency,y=reorder(feature,frequency))) + facet_wrap(~group) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>#AS THIS SHOWS, &quot;service&quot;, &quot;just&quot;, &quot;customer&quot; ARE EXPRESSIONS WHICH ARE USED ACROSS BOTH POSITIVE AND NEGATIVE TWEETS, AND THUS ARE NOT DEFINITIVELY ASSOCIATED WITH PARTICULAR SENTIMENT</code></pre>
+<p><strong>The figure below shows a frequency comparison for words used most in Tweets classified as Positive and Negative, omitting redundant words…</strong></p>
+<pre class="r"><code>ggplot(by.sentiment.2,aes(x=frequency,y=reorder(feature,frequency), geom_point(~group),colour=group)) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;) + ggtitle(&quot;WORD FREQUENCY | DIFFERING WORD USAGE BY SENTIMENT &quot;) + labs(color = &quot;Sentiment&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>This plot shows:</p>
+<p><em>A comparison of the Top 15 Words by (TF-IDF weighted) Frequency used across Positive and Negative Sentiment Tweets. Words in the Top 15 frequencies for both groups appear on the same horizontal line.</em></p>
+<p>Of 11,541 sampled tweets, 2,363 are positive and 9,178 negative in sentiment. This figure indicates words most associated with each sentiment: the largest words depicting those with the highest frequency in each group. This weighting scheme is applied to reflect the importance of each word to tweets in their respective group, achieved by assigning a value which increases proportionally to the frequency of use in each tweet, but is offset by the number of tweets which contain the word, adjusting for natural differences in occurrence. Thus, “thank(s)”, “great”, “love” and “awesome” are most associated with positive sentiment; whilst “get”, “cancelled”, “hours”, “hold”, and “now” are most associated with negative sentiment. There is some overlap between more ambiguous words such as “service”, but each are more strongly associated with negative sentiment. Positive words are prominent because there is a large disparity between the frequencies of common positive words, with “thank(s)” having a frequency at least 2x higher than the 3rd most used word, “great”. Contrastingly, there are no stand-out words associated with negative sentiment, which all have a high relative frequency.</p>
+<pre class="r"><code>#I NOW IDENTIFY THE 15 MOST USED WORDS ASSOCIATED WITH EACH SENTIMENT, POST-REMOVAL OF REDUNDANT EXPRESSIONS. THIS IS USED TO AID MY ANALYSIS WITH MORE DETAILED WEIGHTED WORD FRQUENCY COMPARISON
+by.sentiment.2</code></pre>
+<p><strong>I now plot the most used words in Tweets about each airline as a wordcloud, where the size of the word and its centrality reflects how widely used it is in relation to the corresponding Airline…</strong></p>
+<pre class="r"><code>#I REPEAT THE DESCRIPTION AND COMPARISON PROCESS ABOVE, BUT FOR THE 6 AIRLINES IN THE SAMPLE
+#I GROUP THE TWEETS BY AIRLINE AND FIND THE 15 MOST USED WORDS ASSOCIATED WITH EACH AIRLINE
+by.airline &lt;- textstat_frequency(dfm.tweets.tfidf,15,groups=&quot;airline&quot;, force=TRUE)
+
+dfm.tweets.tfidf.3 &lt;- dfm_remove(dfm.tweets.tfidf,c(&quot;@united&quot;,&quot;@usairways&quot;,&quot;@americanair&quot;,&quot;@southwestair&quot;,&quot;@jetblue&quot;,&quot;@virginamerica&quot;,&quot;united&quot;,&quot;virgin&quot;,&quot;jetblue&quot;,&quot;southwest&quot;,&quot;#unitedairlines&quot;,&quot;#usairways&quot;,&quot;t.co&quot;,&quot;fll&quot;,&quot;phl&quot;,&quot;lga&quot;,&quot;mco&quot;,&quot;#americanairlines&quot;,&quot;SWA&quot;,&quot;sw&quot;,&quot;SW&quot;,&quot;swa&quot;,&quot;ua&quot;,&quot;iad&quot;,&quot;ewr&quot;,&quot;ord&quot;,&quot;las&quot;,&quot;bos&quot;,&quot;lt&quot;,&quot;gt&quot;,&quot;la&quot;,&quot;clt&quot;,&quot;dca&quot;,&quot;bwi&quot;,&quot;atl&quot;,&quot;lax&quot;, &quot;sfo&quot;,&quot;dfw&quot;,&quot;jfk&quot;,&quot;#jetblue&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;iah&quot;,&quot;pdx&quot;,&quot;vx&quot;,&quot;dc&quot;,&quot;rt&quot;,&quot;va&quot;,&quot;flightr&quot;,&quot;phx&quot;,&quot;flt&quot;,&quot;ur&quot;,&quot;bna&quot;,&quot;aa&quot;,&quot;jb&quot;))
+by.airline.2 &lt;- textstat_frequency(dfm.tweets.tfidf.3,15,groups=&quot;airline&quot;, force=TRUE)</code></pre>
+<pre class="r"><code>speechCorpus_small &lt;- corpus_subset(speechCorpus, airline %in% c(&quot;United&quot;,&quot;JetBlue&quot;,&quot;American&quot;,&quot;US Airways&quot;,&quot;Virgin America&quot;,&quot;Southwest&quot;))
+dfm.tweets.3 &lt;- dfm(speechCorpus_small, groups=&quot;airline&quot;,tolower=T,remove_numbers=T,remove = stopwords(&quot;en&quot;),remove_punct=T)
+dfm.tweets.3 &lt;- dfm_remove(dfm.tweets.3,c(&quot;@united&quot;,&quot;@usairways&quot;,&quot;@americanair&quot;,&quot;@southwestair&quot;,&quot;@jetblue&quot;,&quot;@virginamerica&quot;,&quot;united&quot;,&quot;virgin&quot;,&quot;jetblue&quot;,&quot;southwest&quot;,&quot;#unitedairlines&quot;,&quot;#usairways&quot;,&quot;t.co&quot;,&quot;fll&quot;,&quot;phl&quot;,&quot;lga&quot;,&quot;mco&quot;,&quot;#americanairlines&quot;,&quot;SWA&quot;,&quot;sw&quot;,&quot;SW&quot;,&quot;swa&quot;,&quot;ua&quot;,&quot;iad&quot;,&quot;ewr&quot;,&quot;ord&quot;,&quot;las&quot;,&quot;bos&quot;,&quot;lt&quot;,&quot;gt&quot;,&quot;la&quot;,&quot;clt&quot;,&quot;dca&quot;,&quot;bwi&quot;,&quot;atl&quot;,&quot;lax&quot;, &quot;sfo&quot;,&quot;dfw&quot;,&quot;jfk&quot;,&quot;#jetblue&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;iah&quot;,&quot;pdx&quot;,&quot;vx&quot;,&quot;dc&quot;,&quot;rt&quot;,&quot;va&quot;,&quot;flightr&quot;,&quot;phx&quot;,&quot;flt&quot;,&quot;ur&quot;,&quot;bna&quot;,&quot;aa&quot;,&quot;jb&quot;))
+textplot_wordcloud(dfm.tweets.3,max_size=3,max_words=300,comparison=T)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-7-1.png" width="960" /></p>
+<p>This plot shows:</p>
+<p><em>Word usage between Tweets about different Airlines. Each coloured region reflects tweets about a different airline. The size of the word corresponds with (TF-IDF weighted) frequency in each group of tweets: the larger the word, the higher its tweet-level frequency in that group. Words are coloured according to the group of tweets in which they have the highest relative frequency.</em></p>
+<p>This demonstrates notable differences in word use associated with each airline, though “flight” is most frequent in all cases. The Top 15 words associated with United have the highest average word frequency, and so are particularly representative of sentiment towards it. Contrastingly, Virgin shows a relatively low and homogeneous frequency of words, suggesting associated words are more varied and not as important in characterising Virgin tweets as words for other airlines, which occur in far higher frequencies.</p>
+<p>The relative prominence of individual words across airlines in the wordcloud, in which Virgin’s “site”, US Airways’ “hold” and Southwest’s “cancelled” are each considerably larger, is due to disproportionately higher weighted frequencies relative to other high-frequency words associated with the airline.</p>
+<p><strong>Presenting this in a more quantifiable format, I now plot the word frequencies for each airline on a single frequency plot…</strong></p>
+<pre class="r"><code>ggplot(by.airline.2,aes(x=frequency,y=reorder(feature,frequency), geom_point(~group),colour=group)) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;) + ggtitle(&quot;WORD FREQUENCY | DIFFERING WORD USAGE ACROSS AIRLINES&quot;) + labs(color = &quot;Airline&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>This plot shows:</p>
+<p><em>Direct Comparison of the Top 15 Words by (TF-IDF weighted) Frequency used across Tweets associated with each Airline. Words in the Top 15 frequencies for multiple groups appear on the same horizontal line</em></p>
+<p>This figure reveals that positive sentiment such as “thanks” are strongly associated with United and JetBlue and “love” and “[web]site” associated with Virgin: though whether this is associated with particular sentiment is unclear. Conversely, words also highly associated with negative sentiment (see Figure C2), such as “cancelled”, “hold” and “service”, are strongly associated with American and Southwest, and US Airways and United, respectively. Unlike any other airline, words associated with Virgin are exclusively positive or neutral, suggesting it receives consistently positive engagement, despite relatively low importance of associated words.</p>
+<pre class="r"><code>#I NOW FIND THE 15 MOST USED WORDS ASSOCIATED WITH EACH SENTIMENT, POST-REMOVAL OF REDUNDANT EXPRESSIONS: THIS IS USED TO CREATE (TABLE C1) IN THE MAIN REPORT, BY WHICH THE 5 MOST USED WORDS FOR EACH AIRLINE ARE TABULATED
+by.airline.2</code></pre>
+</div>
+</div>
+<div id="diving-deeper" class="section level1">
+<h1>Diving Deeper</h1>
+<div id="now-that-i-have-evaluated-the-most-common-words-associated-with-manually-classified-positive-and-negative-tweets-i-create-a-dictionary-to-make-these-positive-and-negative-classifications-myself" class="section level3">
+<h3>Now that I have evaluated the most common words associated with manually classified positive and negative Tweets, I create a dictionary to make these positive and negative classifications myself…</h3>
+<p>When selecting words for a Dictionary to classify positive and negative sentiment, I attempted to fulfil the following criteria, in order of priority:</p>
+<ol style="list-style-type: decimal">
+<li>No overlap of high-frequency words between sentiments</li>
+<li>Maximum frequency associated with the highest frequency words in each group</li>
+<li>Minimal “noise” from redundant or contextually neutral words</li>
+</ol>
+<p>This criteria is designed to maximise the accuracy of dictionary-based classification, categorising words exclusively associated with positive or negative sentiment, and in high frequency. This means if a Dictionary word is present, there is a maximal probability not only that the tweet associated with a given sentiment, but a considerably lower probability it is associated with the opposite sentiment. Beginning with a TF-IDF matrix excluding redundant terms, such as airport codes, “flight”, “@” for airlines and any irrelevant “#”, the Top 15 positive and negative sentiment word frequencies are plotted to identify words most frequently associated with each group and any overlap in high frequency word usage. Any words present in the Top 15 most frequent words in both groups are eliminated. This is repeated until the “no-overlap” criterion is fulfilled, generating the 15 highest frequency words associated exclusively with each sentiment, utilised to define the Dictionary.</p>
+<p><strong>Here I build a dictionary-based classifier to label Tweets as positive or negative in sentiment depending on the words they contain…</strong></p>
+<pre class="r"><code>#THE DOCUMENT-TERM MATRIX I INTEND TO USE FOR CREATION OF A DICTIONARY OF NEGATIVE AND POSITIVE WORDS DESCRIBING AIRLINES IS AS BEFORE, BUT EXCLUDING ALL THE PREVIOUSLY IDENTIFIED REDUNDANT WORDS (BOTH THOSE REMOVED IN SECTION G.1 AND SECTION G.2): 
+dfm.tweets.tfidf.final.1 &lt;-  dfm_remove(dfm.tweets.tfidf,c(&quot;@united&quot;,&quot;@usairways&quot;,&quot;@americanair&quot;,&quot;@southwestair&quot;,&quot;@jetblue&quot;,&quot;@virginamerica&quot;,&quot;t.co&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;w&quot;,&quot;airline&quot;,&quot;flying&quot;,&quot;flight&quot;,&quot;can&quot;,&quot;plane&quot;,&quot;one&quot;,&quot;flights&quot;,&quot;back&quot;,&quot;gate&quot;,&quot;fly&quot;,&quot;fll&quot;,&quot;phl&quot;,&quot;lga&quot;,&quot;mco&quot;,&quot;#americanairlines&quot;,&quot;SWA&quot;,&quot;sw&quot;,&quot;SW&quot;,&quot;swa&quot;,&quot;ua&quot;,&quot;iad&quot;,&quot;ewr&quot;,&quot;ord&quot;,&quot;las&quot;,&quot;bos&quot;,&quot;lt&quot;,&quot;gt&quot;,&quot;la&quot;,&quot;clt&quot;,&quot;dca&quot;,&quot;bwi&quot;,&quot;atl&quot;,&quot;lax&quot;, &quot;sfo&quot;,&quot;dfw&quot;,&quot;jfk&quot;,&quot;#jetblue&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;iah&quot;,&quot;pdx&quot;,&quot;vx&quot;,&quot;dc&quot;,&quot;rt&quot;,&quot;va&quot;,&quot;flightr&quot;,&quot;phx&quot;,&quot;flt&quot;,&quot;ur&quot;,&quot;bna&quot;,&quot;like&quot;,&quot;aa&quot;,&quot;jb&quot;))
+
+#IN MY DICTIONARY, I INCLUDE ONLY THE TOP 15 &#39;POSITIVE&#39; WORDS AND THE TOP 15 &#39;NEGATIVE WORDS&#39; 
+#THE TERMS ALREADY REMOVED IN THIS DATASET, ARE EXCLUSIVELY NEUTRAL TERMS, MEANING THAT THE TOP 15 POSITIVE AND NEGATIVE WORDS ARE IN FACT POSITIVE OR NEGATIVE, AND NOT SIMPLY NEUTRAL WORDS WHICH HAPPEN TO OCCUR WITH HIGH FREQUENCY IN ONE TYPE OF TEXT
+#THIS MEANS THAT DEFINING A DICTIONARY ON THE BASIS OF THE TOP 15 (NON-NEUTRAL) WORDS ASSOCIATED WITH POSITIVE SENTIMENT, AND TOP 15 WORDS ASSOCIATED WITH NEGATIVE SENTIMENT, IS LIKELY TO RESULT IN QUALITY CLASSIFICATION OF UNSEEN TWEETS
+sentiment.dictionary.1 &lt;- textstat_frequency(dfm.tweets.tfidf.final.1,15,groups=&quot;sentiment&quot;, force=TRUE)
+
+#WORDS SELECTED FOR THE DICTIONARY MUST HAVE NO OVERLAP, SO I PLOT THE POSITIVE AND NEGATIVE SENTIMENT WORD FREQUENCIES TO ENSURE THAT THIS IS THE CASE, MEANING THE IDENTIFIED WORDS ARE NOT ONLY IN HIGH FREQUENCY IN THEIR TYPE OF DOCUMENT, BUT THAT THEY ARE NOT ALSO IN HIGH FREQUENCY IN THE OTHER TYPE OF DOCUMENT, WHICH IS LIKELY TO RESULT IN A HIGH ERROR RATE IN CATEGORISATION
+sentiment.dictionary.1$group &lt;- ifelse(sentiment.dictionary.1$group==1,&quot;Negative Sentiment&quot;,&quot;Positive Sentiment&quot;)
+ggplot(sentiment.dictionary.1,aes(x=frequency,y=reorder(feature,frequency))) + facet_wrap(~group) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<pre class="r"><code>#THIS PLOT SHOWS THAT THERE IS SOME OVERLAP BETWEEN THE WORDS &quot;service&quot;, &quot;just&quot;, &quot;customer&quot;, &quot;help&quot; and &quot;time&quot; IN THE TWO GROUPS, AS WELL AS SOME REMAINING &#39;NEUTRAL&#39; WORDS: I THEREFORE ELIMINATE THESE TERMS FROM THE MATRIX AND REPEAT, ITERATIVELY ENSURING THAT THERE IS NO OVERLPA IN HIGH FREQUENCY WORDS BETWEEN  SENTIMENTS, TO CREATE A DICTIONARY BASED ON WORDS STRONGLY ASSOCIATED WITH EXCLUSIVELY ONE TYPE OF SENTIMENT
+dfm.tweets.tfidf.final.2 &lt;-  dfm_remove(dfm.tweets.tfidf,c(&quot;@united&quot;,&quot;@usairways&quot;,&quot;@americanair&quot;,&quot;@southwestair&quot;,&quot;@jetblue&quot;,&quot;@virginamerica&quot;,&quot;t.co&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;w&quot;,&quot;airline&quot;,&quot;flying&quot;,&quot;flight&quot;,&quot;can&quot;,&quot;plane&quot;,&quot;one&quot;,&quot;flights&quot;,&quot;back&quot;,&quot;gate&quot;,&quot;fly&quot;,&quot;fll&quot;,&quot;phl&quot;,&quot;lga&quot;,&quot;mco&quot;,&quot;#americanairlines&quot;,&quot;SWA&quot;,&quot;sw&quot;,&quot;SW&quot;,&quot;swa&quot;,&quot;ua&quot;,&quot;iad&quot;,&quot;ewr&quot;,&quot;ord&quot;,&quot;las&quot;,&quot;bos&quot;,&quot;lt&quot;,&quot;gt&quot;,&quot;la&quot;,&quot;clt&quot;,&quot;dca&quot;,&quot;bwi&quot;,&quot;atl&quot;,&quot;lax&quot;, &quot;sfo&quot;,&quot;dfw&quot;,&quot;jfk&quot;,&quot;#jetblue&quot;,&quot;http&quot;,&quot;amp&quot;,&quot;flightled&quot;,&quot;iah&quot;,&quot;pdx&quot;,&quot;vx&quot;,&quot;dc&quot;,&quot;rt&quot;,&quot;va&quot;,&quot;flightr&quot;,&quot;phx&quot;,&quot;flt&quot;,&quot;ur&quot;,&quot;bna&quot;,&quot;like&quot;,&quot;aa&quot;,&quot;jb&quot;,&quot;service&quot;,&quot;just&quot;,&quot;customer&quot;,&quot;help&quot;,&quot;time&quot;,&quot;get&quot;,&quot;us&quot;))
+sentiment.dictionary.2 &lt;- textstat_frequency(dfm.tweets.tfidf.final.2,15,groups=&quot;sentiment&quot;, force=TRUE)
+
+sentiment.dictionary.2$group &lt;- ifelse(sentiment.dictionary.2$group==1,&quot;Negative Sentiment&quot;,&quot;Positive Sentiment&quot;)
+ggplot(sentiment.dictionary.2,aes(x=frequency,y=reorder(feature,frequency))) + facet_wrap(~group) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<p><strong>Using the dictionary I have created, I now plot a full weighted word frequency comparison between positive and negative sentiment words used in the dictionary, as well as a list of the top 10 positive and top 10 negative words across all airlines’ tweets…</strong></p>
+<pre class="r"><code>ggplot(sentiment.dictionary.2,aes(x=frequency,y=reorder(feature,frequency), geom_point(~group),colour=group)) + geom_point() + ylab(&quot;&quot;) + xlab(&quot;Frequency (TF-IDF)&quot;) + ggtitle(&quot;DICTIONARY WORDS | WORDS UNIQUELY ASSOCIATED WITH EACH SENTIMENT&quot;) + labs(color = &quot;Sentiment&quot;)</code></pre>
+<p><img src="/blogs/rockefeller_files/figure-html/unnamed-chunk-11-1.png" width="960" /></p>
+<pre class="r"><code>#THERE IS NOW NO OVERLAP IN THE WORDS MOST ASSOCIATED WITH POSITIVE OR NEGATIVE SENTIMENT, AND THUS THE TOP 15 WORDS IN TERMS OF FREQUENCY, FOR EACH TYPE OF SENTIMENT, ARE UNIQUELY ASSOCIATED WITH THAT SENTIMENT
+#THIS MEANS THE HIGHEST FREQUENCY WORDS IN EACH GROUP SHOULD BE GOOD PREDICTORS SPECIFICALLY FOR WHETHER A TWEET FALLS INTO EITHER GROUP, AND THE DICTIONARIES FOR EACH SENTIMENT CAN BE FULLY DISTINCT, WITH NO OVERLAP
+
+#CREATING THE DICTIONARY: THE TOP 15 WORDS OF EACH SENTIMENT GROUP WILL BE UTILISED TO CREATE A DICTIONARY FOR CATEGORISING POSITIVE AND NEGATIVE SENTIMENT
+positive.15.dictionary &lt;- head(sentiment.dictionary.2,15)
+positive.15.dictionary</code></pre>
+<pre><code>##       feature frequency rank docfreq              group
+## 1      thanks  671.0961    1     597 Positive Sentiment
+## 2       thank  610.9851    2     437 Positive Sentiment
+## 3       great  374.0888    3     220 Positive Sentiment
+## 4  \U0001f64f  344.1016    4      14 Positive Sentiment
+## 5        love  235.1544    5     127 Positive Sentiment
+## 6     awesome  196.8982    6      96 Positive Sentiment
+## 7        much  192.4480    7     104 Positive Sentiment
+## 8        best  191.3108    8     104 Positive Sentiment
+## 9        good  179.7448    9     107 Positive Sentiment
+## 10       guys  170.2465   10     108 Positive Sentiment
+## 11    amazing  160.2081   11      76 Positive Sentiment
+## 12        got  148.4752   12      94 Positive Sentiment
+## 13 appreciate  126.2901   13      62 Positive Sentiment
+## 14      today  125.1489   14      80 Positive Sentiment
+## 15       crew  119.7776   15      69 Positive Sentiment</code></pre>
+<pre class="r"><code>negative.15.dictionary &lt;- tail(sentiment.dictionary.2,15)
+negative.15.dictionary</code></pre>
+<pre><code>##      feature frequency rank docfreq              group
+## 16 cancelled 1012.7395    1     874 Negative Sentiment
+## 17       now  920.1365    2     807 Negative Sentiment
+## 18     hours  821.5941    3     613 Negative Sentiment
+## 19      hold  785.0683    4     589 Negative Sentiment
+## 20   delayed  681.0838    5     481 Negative Sentiment
+## 21     still  659.9513    6     477 Negative Sentiment
+## 22      call  649.8062    7     425 Negative Sentiment
+## 23      hour  621.9404    8     437 Negative Sentiment
+## 24       bag  609.3498    9     372 Negative Sentiment
+## 25         $  595.3340   10     301 Negative Sentiment
+## 26      late  558.2666   11     359 Negative Sentiment
+## 27      need  554.6717   12     358 Negative Sentiment
+## 28     phone  541.9343   13     355 Negative Sentiment
+## 29   waiting  520.6715   14     324 Negative Sentiment
+## 30    please  482.5755   15     312 Negative Sentiment</code></pre>
+<pre class="r"><code>#THIS LIST OF WORDS IS DENOTED IN  (TABLE C2) IN THE MAIN REPORT
+
+neg.words &lt;- c(&quot;cancelled&quot;,&quot;now&quot;,&quot;hours&quot;,&quot;hold&quot;,&quot;delayed&quot;,&quot;still&quot;,&quot;call&quot;,&quot;hour&quot;,&quot;bag&quot;,&quot;late&quot;,&quot;need&quot;,&quot;phone&quot;,&quot;waiting&quot;,&quot;please&quot;,&quot;trying&quot;)
+pos.words &lt;- c(&quot;thanks&quot;,&quot;thank&quot;,&quot;great&quot;,&quot;love&quot;,&quot;awesome&quot;,&quot;much&quot;,&quot;best&quot;,&quot;good&quot;,&quot;guys&quot;,&quot;amazing&quot;,&quot;got&quot;,&quot;today&quot;,&quot;appreciate&quot;,&quot;crew&quot;,&quot;made&quot;)
+mydict &lt;- dictionary(list(negative = neg.words, positive = pos.words))</code></pre>
+<p>These tables show:</p>
+<p><em>Chosen Dictionary Words: Top 15 Most Frequent (TF-IDF weighted) Words utilised uniquely in Positive Sentiment and Negative Sentiment Groups.</em></p>
+<p><strong>Now I actually use the dictionary classifier I have made to classify all the tweets in the sample as positive or negative in sentiment…</strong></p>
+<pre class="r"><code>#CREATING A WEIGHTED DOCUMENT-TERM MATRIX WHICH ADJUSTS FOR LENGTH OF TWEET AND USES MY OWN DICTIONARY, DEFINED IN SECTION H.0
+tweets.dictionary &lt;- dfm_weight(dfm(speechCorpus,remove_numbers=T,remove = stopwords(&quot;en&quot;),remove_punct=T,dictionary = mydict),scheme=&quot;prop&quot;)
+tweets.dictionary &lt;- convert(tweets.dictionary,to=&quot;data.frame&quot;)
+
+#I NOW CLASSIFY TWEETS WITH MORE NEGATIVE THAN POSITIVE WORDS AS NEGATIVE, AND ANY TWEETS WHICH DO NOT MEET THIS CONDITION AS POSITIVE
+tweets.dictionary$score &lt;- ifelse((tweets.dictionary$negative - tweets.dictionary$positive)&gt;0,&quot;1&quot;,&quot;0&quot;)
+
+#THIS RESULTS IN A DATAFRAME, tweets.dictionary, WHICH CLASSIFIES EVERY TWEET AS EITHER POSITIVE OR NEGATIVE IN SENTIMENT, BASED ON MY DICTIONARY CLASSIFICATION WORDS
+#FOR FULL PERFORMANCE ASSESSMENT OF THIS DICTIONARY-BASED SENTIMENT CLASSIFICATION APPROACH, SEE SECTION J.0</code></pre>
+<p>The resulting object, tweets.dictionary, has a score of 1 if the Tweet is wholly positive, and a score of 0 if it is wholly negative, and an intermediate score depending on the weighted frequency of positive and negative words it contains.</p>
+<p>Tweets are classified as negative only if they contained more negative than positive Dictionary words, meaning even tweets with no Dictionary words are classified as “positive”. This in-built positive sentiment bias prioritises Sensitivity. However, in the context of customer service this seems counter-intuitive, as addressing negative tweets holds greater urgency than addressing positive tweets which rarely require urgent engagement or remediation.</p>
+</div>
+<div id="the-supervised-machine-learning-approach" class="section level2">
+<h2>The Supervised Machine Learning Approach</h2>
+<p>I apply LASSO, a Supervised Machine-Learning (Supervised) approach, to classify tweets into positive and negative sentiment by performing optimal word selection and regularisation, enhancing classification accuracy. This is achieved through classifying sentiment using 497 context-specific words derived from learning sentiment patterns in 2133 unique words. The table below allows comparison of the Top 15 most frequent words in each sentiment group generated by the Supervised approach, alongside those used to define the Dictionary.</p>
+<p><strong>Here I demonstrate an alternative approach to dictionary formation and tweet-sentiment classification, which replaces the manual approach above…</strong></p>
+<pre class="r"><code>#IN ORDER TO APPLY A SUPERVISED MACHINE LEARNING CLASSIFICATION, I CREATE A NEW DOCUMENT-TERM MATRIX, WEIGHTED BY DOCUMENT LENGTH BUT WITHOUT APPLYING MY DICTIONARY CLASSIFICATION. I ALSO REMOVE WORDS WHICH ARE TWEET-SPECIFIC, WHICH APPEAR ONLY IN 5 OR FEWER TWEETS
+tweets.supervised &lt;- dfm_weight(dfm(speechCorpus,remove_numbers=T,remove = stopwords(&quot;en&quot;),remove_punct=T,),scheme=&quot;prop&quot;)
+tweets.supervised &lt;- tweets.supervised[,docfreq(tweets.supervised)&gt;5]
+tweets.supervised &lt;- as.matrix(cbind(tweets$sentiment, tweets.supervised))
+dim(tweets.supervised)
+
+#THERE ARE 2132 UNIQUE WORDS CONTAINED IN 11,541 DISTINCT TWEETS
+
+set.seed(1)
+cv.rows &lt;- sample(nrow(tweets.supervised),(nrow(tweets.supervised)/2))
+cv.data &lt;- tweets.supervised[cv.rows,]
+test.data &lt;- tweets.supervised[-cv.rows,]
+
+lasso.tweets &lt;- cv.glmnet(x=cv.data[,2:2133],y=cv.data[,1],family=&quot;binomial&quot;,type.measure=&quot;class&quot;)
+tweets.preds &lt;- predict(lasso.tweets, test.data[,2:2133], type=&quot;class&quot;)
+
+#THE 15 WORDS WHICH MOST PREDICT POSITIVE AND NEGATIVE SENTIMENT IN TWEETS ARE: 
+
+lasso.coef &lt;- as.matrix(coef(lasso.tweets)[coef(lasso.tweets)[,1]!=0,])
+lasso.coef &lt;- as.matrix(lasso.coef[order(lasso.coef[,1]),])
+
+#THIS ALLOWS ME TO IDENTIFY THE NUMBER OF WORDS USED FOR CLASSIFICATION IN THE OPTIMISED LASSO
+#IN THIS CASE, JUST 497 OF THE ORIGINAL 2133 WORDS ARE USED FOR CLASSIFICATION
+length(lasso.coef[lasso.coef!=0])
+
+positive.15.supervised &lt;- head(lasso.coef,15)
+negative.15.supervised &lt;- tail(lasso.coef,15)
+
+positive.15.supervised
+negative.15.supervised</code></pre>
+<p><strong>I now compare the top positive and negative sentiment words identified by the manual dictionary classifier and the machine learning classifier, to decide which is the better classifier for Airlines to use for future tweets…</strong></p>
+<pre class="r"><code>#PLOTTING THE TOP 15 POSITIVE AND NEGATIVE WORDS IN THE TWEETS, WHICH WERE APPLIED TO THE DICTIONARY, VS THOSE RESULTING FROM THE SUPERVISED CLASSIFICATION
+
+#Dictionary Classifier: Positive Words&quot;
+positive.15.dictionary</code></pre>
+<pre><code>##       feature frequency rank docfreq              group
+## 1      thanks  671.0961    1     597 Positive Sentiment
+## 2       thank  610.9851    2     437 Positive Sentiment
+## 3       great  374.0888    3     220 Positive Sentiment
+## 4  \U0001f64f  344.1016    4      14 Positive Sentiment
+## 5        love  235.1544    5     127 Positive Sentiment
+## 6     awesome  196.8982    6      96 Positive Sentiment
+## 7        much  192.4480    7     104 Positive Sentiment
+## 8        best  191.3108    8     104 Positive Sentiment
+## 9        good  179.7448    9     107 Positive Sentiment
+## 10       guys  170.2465   10     108 Positive Sentiment
+## 11    amazing  160.2081   11      76 Positive Sentiment
+## 12        got  148.4752   12      94 Positive Sentiment
+## 13 appreciate  126.2901   13      62 Positive Sentiment
+## 14      today  125.1489   14      80 Positive Sentiment
+## 15       crew  119.7776   15      69 Positive Sentiment</code></pre>
+<pre class="r"><code>#&quot;Dictionary Classifier: Negative Words&quot;
+negative.15.dictionary</code></pre>
+<pre><code>##      feature frequency rank docfreq              group
+## 16 cancelled 1012.7395    1     874 Negative Sentiment
+## 17       now  920.1365    2     807 Negative Sentiment
+## 18     hours  821.5941    3     613 Negative Sentiment
+## 19      hold  785.0683    4     589 Negative Sentiment
+## 20   delayed  681.0838    5     481 Negative Sentiment
+## 21     still  659.9513    6     477 Negative Sentiment
+## 22      call  649.8062    7     425 Negative Sentiment
+## 23      hour  621.9404    8     437 Negative Sentiment
+## 24       bag  609.3498    9     372 Negative Sentiment
+## 25         $  595.3340   10     301 Negative Sentiment
+## 26      late  558.2666   11     359 Negative Sentiment
+## 27      need  554.6717   12     358 Negative Sentiment
+## 28     phone  541.9343   13     355 Negative Sentiment
+## 29   waiting  520.6715   14     324 Negative Sentiment
+## 30    please  482.5755   15     312 Negative Sentiment</code></pre>
+<pre class="r"><code>#&quot;Supervised Classifier: Positive Words&quot;
+positive.15.supervised</code></pre>
+<pre><code>##                  [,1]
+## pvd         -37.08647
+## kudos       -36.74010
+## exceptional -34.07206
+## excellent   -31.43831
+## deserves    -31.09170
+## replying    -29.92456
+## amazing     -24.88282
+## thank       -24.36298
+## rocks       -23.76630
+## awesome     -23.37055
+## offers      -23.22227
+## warm        -22.55692
+## d           -22.49538
+## crossed     -22.37480
+## avail       -22.17120</code></pre>
+<pre class="r"><code>#&quot;Supervised Classifier: Negative Words&quot;
+negative.15.supervised</code></pre>
+<pre><code>##                   [,1]
+## cancelled     7.585951
+## incident      7.651573
+## delayed       7.735493
+## standard      8.014900
+## fare          8.254642
+## worst         8.587439
+## meetings      8.721861
+## website       8.742519
+## listed        9.942035
+## paid         11.348846
+## hours        11.707867
+## ruined       14.207991
+## ruining      15.677600
+## straight     16.354572
+## dissatisfied 18.999516</code></pre>
+<p>There is little overlap in words classified as strongly associated with each sentiment by the Dictionary and Supervised approach: only 3 positive and 2 negative terms are shared. The difference in words most associated with each sentiment reflects how LASSO does not simply select the highest frequency words in each group, but adjusts coefficients to inductively minimise classification error and penalise complexity, comparing models accounting for all sample words. Thus, this is likely to outperform the less exhaustive frequency-based Dictionary.</p>
+</div>
+<div id="which-model-is-best-sensitivity-specificity-and-contextual-decisions" class="section level2">
+<h2>Which Model is Best? Sensitivity, Specificity and Contextual Decisions…</h2>
+<p><strong>I finally evaluate the performance of the dictionary classifier and the supervised machine learning classifier relative to the actual manual classification of the tweets, to evaluate the sensitivity and specificity of each classification approach and select which is most suitable…</strong></p>
+<p><em>The Performance of the Dictionary Classifier</em></p>
+<pre class="r"><code>#I ADD THE DICTIONARY-CLASSIFIED TWEETS AS A COLUMN OF THE tweets DATAFRAME
+tweets$dictionary &lt;- tweets.dictionary$score
+tweets$dictionary
+table(tweets$dictionary, tweets$sentiment)
+
+#NOTE THAT (1) DENOTES NEGATIVE SENTIMENT. THIS MEANS THAT THE NUMBER OF &quot;TRUE POSITIVE&quot; CLASSIFIED TWEETS IS ACTUALLY IDENTIFIED BY (0,0), NOT (1,1) AS IS CONVENTIONALLY THE CASE. THROUGHOUT THIS ANALYSIS, THE TRUE POSITIVE RATE INDICATES THE NUMBER OF ACTUAL POSITIVE SENTIMENT TWEETS IDENTIFIED, DIVIDED BY THE TOTAL NUMBER OF POSITIVE TWEETS IN THE DATA.
+
+#TRUE POSITIVE RATE:                  THERE IS 94.3% ACCURACY IN PREDICTING TWEETS WHICH ARE POSITIVE
+2228/(2228+135)
+
+#TEST ERROR RATE:                     TER = 45.99%
+(135+5173)/(135+5173+4005+2228)
+
+#TRUE NEGATIVE RATE:                  THERE IS 43.6% ACCURACY IN PREDICTING TWEETS WHICH ARE NEGATIVE
+4005/(4005+5173)
+
+#FALSE POSITIVE RATE: 
+5173/(5173+4005)</code></pre>
+<p><em>The Performance of the Lasso-Based Classification</em></p>
+<pre class="r"><code>table(tweets.preds,test.data[,1])
+
+#NOTE THAT (1) DENOTES NEGATIVE SENTIMENT. THIS MEANS THAT THE NUMBER OF &quot;TRUE POSITIVE&quot; CLASSIFIED TWEETS IS ACTUALLY IDENTIFIED BY (0,0), NOT (1,1) AS IS CONVENTIONALLY THE CASE. THROUGHOUT THIS ANALYSIS, THE TRUE POSITIVE RATE INDICATES THE NUMBER OF ACTUAL POSITIVE SENTIMENT TWEETS IDENTIFIED, DIVIDED BY THE TOTAL NUMBER OF POSITIVE TWEETS IN THE DATA.
+
+#TRUE POSITIVE RATE:                THERE IS 61.5% ACCURACY IN PREDICTING TWEETS WHICH ARE POSITIVE
+723/(723+452)
+
+#TEST ERROR RATE:                   TER = 9.96%
+(123+452)/(123+452+723+4473)
+
+#TRUE NEGATIVE RATE:                THERE IS 97.3% ACCURACY IN PREDICTING TWEETS WHICH ARE NEGATIVE
+4473/(4473+123)
+
+#FALSE POSITIVE RATE: 
+452/(723+452)
+
+#THESE FIGURES ARE QUOTED IN (TABLE C5) IN THE MAIN REPORT
+#THIS REVEALS A SIGNIFICANT IMPROVEMENT IN CLASSIFICATION PERFORMANCE, PARTICULARLY CENTRED ON THE TRUE NEGATIVE RATE (SPECIFICITY), WHICH IS PRIORITISED IN THIS REPORT AS IT IS MOST IMPORTANT FOR AIRLINES TO ADDRESS COMPLAINTS AND CONCERNS QUICKLY, RATHER THAN CLASSIFY PRAISE WHICH DOES NOT NEED TO BE RAPIDLY ADDRESSED OR REMEDIATED.</code></pre>
+<p>Test Error Rate (TER) is used to assess classifier performance and Specificity is prioritised over Sensitivity, as the cost of falsely identifying a tweet as negative and addressing it with urgency is far lower than that of misclassifying negative tweets and failing to provide timely customer service to problematic claims. A classifier with high Specificity is likely to enable airlines to respond to the most needy customers in real-time, eliminating ‘noise’ from positive tweets unlikely to require remediation. The chunks above affirm that based on the TER, Sensitivity and Specificity, the Supervised classifier is better, despite high Sensitivity of the Dictionary approach.</p>
+</div>
+<div id="occams-razor" class="section level2">
+<h2>Occam’s Razor</h2>
+<p>Prioritising Specificity, the Supervised classifier improves detection of negative sentiment by 53.7%, misclassifying less than 3.00% of negative tweets, and generates a 46.4% lower TER. Not only is the Supervised classifier generally less prone to error, but it is particularly likely to increase effectiveness of customer response to negative tweets, despite increased risk of inefficiency-inducing false negatives as a result of its low 61.5% Sensitivity. This contrasts with the Dictionary approach, which misclassifies just 5.70% of positive tweets, but classifies negative tweets with even lower accuracy than the Supervised classifier does positive tweets. Hence, though both classifiers perform well, they do so at entirely different tasks. The Dictionary is most appropriate for airlines who prioritise positive customer engagement over problem or complaint remediation, whilst the Supervised approach is suited for airlines attempting to maximise efficiency of engagement with negative sentiment, to achieve faster remediation. Regardless, the low TER of the Supervised approach, of just 9.96%, indicates that it outperforms the Dictionary classifier overall, and particularly in negative sentiment classification, arguably more important than Sensitivity. Applying this Supervised classifier would therefore allow airlines to identify and address negative tweets in realtime, improving targeted responsiveness towards customers: a priority for airlines such as American, who’s most associated tweets involve negative words centred on resolvable problems including cancellations and delays.</p>
+</div>
+</div>

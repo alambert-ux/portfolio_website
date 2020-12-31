@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Alberto Lambert</title>
+    <link>/blogs/</link>
+    <description>Recent content in Projects on Alberto Lambert</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 31 Oct 2017 22:27:21 -0500</lastBuildDate>
+    
+	<atom:link href="/blogs/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Lincoln</title>
+      <link>/blogs/lincoln/</link>
+      <pubDate>Tue, 31 Oct 2017 21:28:43 -0500</pubDate>
+      
+      <guid>/blogs/lincoln/</guid>
+      <description>The Problem The June 2016 Eropean Union (EU) Referendum, which resulted in a United Kingdom’s “Brexit” vote to leave the EU, was a significant turning point in international diplomacy. Understanding the potential drivers behind the United Kingsom’s decision, voting 52% to 48% to leave, is crucial to glean a better picture of what the nation hopes for as it removes formal political ties with the rest of Europe. From a party perspective, analyses into who Brexit voters are allows them to capitalise off underlying motivations to advance their political standing.</description>
+    </item>
+    
+    <item>
+      <title>Nightingale</title>
+      <link>/blogs/nightingale/</link>
+      <pubDate>Tue, 31 Oct 2017 21:28:43 -0500</pubDate>
+      
+      <guid>/blogs/nightingale/</guid>
+      <description>The Problem Gun control is one of the most hotly debated topics in the United States. There is a deep divide between those who consider it their Second Amendment right to bear arms, and those who believe the widespread posession of firearms is a threat to public health and safety. Here, we conceptualize two dominant risks posed by the widespread acceptance of firearms ownership in modern American society - suicide and homicide.</description>
+    </item>
+    
+    <item>
+      <title>Odum</title>
+      <link>/blogs/odum/</link>
+      <pubDate>Tue, 31 Oct 2017 21:28:43 -0500</pubDate>
+      
+      <guid>/blogs/odum/</guid>
+      <description>The Problem Santander Bikes (or “Boris Bikes”, in recognition of the then-Mayor of London Boris Johnson), are widely used across the City of London by tens of thousands of people every day. Understanding how many bikes are likely to be in use on a given day of the week, and a given month of the year is crucial for making decisions around how many bikes to provide, how often they need to be serviced, and make revenue and profitability forecasts crucial for informing future investment in “green” technologies and services in the City of London.</description>
+    </item>
+    
+    <item>
+      <title>Rockerfeller</title>
+      <link>/blogs/rockerfeller/</link>
+      <pubDate>Tue, 31 Oct 2017 21:28:43 -0500</pubDate>
+      
+      <guid>/blogs/rockerfeller/</guid>
+      <description>The Problem Airline carriers receive a high volume of public Tweets daily, which in the most part they need to interact with or address directly both to ensure good customer experience and avoid public humiliation. Tweets vary from positive “thank you” messages to complaints and accusations of “lost luggage”, “delayed flights” and “unfair fees”. Analysing this data in real-time is crucial for Airlines’ customer service teams to address complaints and negative publicity proactively and positively, and make happy passengers feel valued and recognised.</description>
+    </item>
+    
+  </channel>
+</rss>

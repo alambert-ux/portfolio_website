@@ -1,0 +1,238 @@
+<!DOCTYPE HTML>
+<html>
+
+    <head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<meta name="description" content="Personal Portfolio Website for Applied Statistics (MAM2021)">
+	<meta name="author" content="Alberto Lambert">
+	<meta name="generator" content="Hugo 0.74.3" />
+	<title>Nightingale &middot; Alberto Lambert</title>
+	<!-- Stylesheets -->
+	
+	<link rel="stylesheet" href="/css/main.css"/>
+	
+	
+
+	
+
+	<!-- Custom Fonts -->
+	<link href="/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+	
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+	<link rel="icon" type="image/x-icon" href="/favicon.ico">
+	
+
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+	<script src="js/ie/html5shiv.js"></script>
+	<script src="js/ie/html5shiv.jsrespond.min.js"></script>
+	<![endif]-->
+</head>
+
+    <body>
+
+    <!-- Wrapper -->
+        <div id="wrapper">
+
+            <!-- Header -->
+    <header id="header" class="alt">
+        <a href="/" class="logo"><strong>Alberto Lambert</strong> <span>Portfolio</span></a>
+        <nav>
+            <a href="#menu">Menu</a>
+        </nav>
+    </header>
+
+<!-- Menu -->
+    <nav id="menu">
+        <ul class="links">
+            
+                <li><a href="/">Home</a></li>
+            
+                <li><a href="/post/life">Life</a></li>
+            
+                <li><a href="/post/work">Work</a></li>
+            
+
+        </ul>
+        <ul class="actions vertical">
+            
+            
+                <li><a href="/blogs" class="button fit">Projects</a></li>
+            
+        </ul>
+    </nav>
+
+        <!-- Main -->
+            <div id="main" class="alt">
+
+                
+                    <section id="one">
+                        <div class="inner">
+                            <header class="major">
+                                <h1>Nightingale</h1>
+                            </header>
+                            
+                                <span class="image main"><img src="/img/blogs/pic13.jpg" alt="" /></span>
+                            
+                            
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="the-problem" class="section level1">
+<h1>The Problem</h1>
+<p>Gun control is one of the most hotly debated topics in the United States. There is a deep divide between those who consider it their Second Amendment right to bear arms, and those who believe the widespread posession of firearms is a threat to public health and safety. Here, we conceptualize two dominant risks posed by the widespread acceptance of firearms ownership in modern American society - suicide and homicide. In doing so, we are capable of identifying not only whether states with higher suicide rates are also prone to higher homicide rates, but also whether those with the highest rates share commonalities, such as state-level population size and, most importantly, proportion of firearm owners.</p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p>I employ a key dataset from the Centers for Disease Control and Prevention (CDC), to visualise the relationship between homicide and suicide rates and gun ownership across a selection of US states.</p>
+</div>
+<div id="the-solution" class="section level1">
+<h1>The Solution</h1>
+<div id="homicide-and-suicide-rates-in-black-and-white-non-hispanic-men-across-the-united-states" class="section level3">
+<h3>Homicide and Suicide Rates in Black and White Non-Hispanic Men Across the United States</h3>
+<p><strong>First, the required packages are loaded…</strong></p>
+<pre class="r"><code>library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(lubridate)
+library(fivethirtyeight)
+library(here)
+library(skimr)
+library(janitor)
+library(vroom)
+library(tidyquant)
+library(kableExtra)
+library(ggrepel)
+library(patchwork)</code></pre>
+<p><strong>Next, I load the required data and evaluate its core structure…</strong></p>
+<pre class="r"><code>#We load in the required dataset and review its basic structure
+CDC_Males &lt;- read_csv(here::here(&quot;data&quot;, &quot;CDC_Males.csv&quot;))
+skim(CDC_Males)
+glimpse(CDC_Males)</code></pre>
+<p><strong>Finally, I build a plot in order to show the relationship between Homicide and Suicide Rates, with the size of bubbles indicating state-level population and the colour of the bubble indicating the proportion of state-level gun ownership (%): </strong></p>
+<pre class="r"><code>#We define the necessary dataset and variables
+Figure_3_Data &lt;- CDC_Males %&gt;% 
+  
+  # include firearm-related cases only, exclude district of columbia, hawaii and united states
+  
+  filter(type.fac==&quot;Firearm-related&quot;, !(ST %in% c(&quot;DC&quot;,&quot;HI&quot;,&quot;US&quot;))) %&gt;% 
+  
+  select(ST, average.pop.white, gun.house.prev.category,
+         adjusted.homicide.White, adjusted.suicide.White)
+  
+bubble_shade &lt;- c(&quot;10.2%-19.9%&quot; = &quot;#fef0d9&quot;,
+                   &quot;20.0%-34.9%&quot; = &quot;#fdcc8a&quot;,
+                   &quot;35.0%-44.9%&quot; = &quot;#fc8d59&quot;,
+                   &quot;45.0%-65.5%&quot; = &quot;#d7301f&quot;)
+
+ggplot(Figure_3_Data, aes(x = adjusted.suicide.White, 
+                          y = adjusted.homicide.White, 
+                          fill = gun.house.prev.category, 
+                          size = average.pop.white, 
+                          label = ST)) +
+  
+  # add geom layer
+  geom_point(shape = 21, # shape = 21 are points with border
+             color = &quot;black&quot;) + # set border = black
+  
+  # add text label
+  geom_text_repel(color = &#39;black&#39;, size = 5) +
+  
+  # adjust size
+  scale_size_continuous(range = c(2, 18), # set size range, otherwise the smallest points would be too small
+                        breaks = c(500000,1500000,3000000,7000000), # break size into 4 as shown in the plot
+                        labels = c(&#39;500k&#39;,&#39;1.5m&#39;,&#39;3m&#39;,&#39;7m&#39;)) +
+  
+  # adjust fill
+  scale_fill_manual(values = bubble_shade) + # color points by gun ownership category
+  
+  # add a theme
+  theme_bw() +
+  
+  theme(aspect.ratio = 1) +
+  
+  # add labels for axes, fill legend and size legend
+  labs(x = &#39;White suicide rate (per 100,000 per year)&#39;,
+       y = &#39;White homicide rate (per 100,000 per year)&#39;,
+       fill = &#39;Gun ownership&#39;,
+       size = &#39;White population&#39;) +
+  
+  # set x and y coordinates to add annotate
+  annotate(geom = &#39;text&#39;, # geom type = text
+           label = &quot;Spearman&#39;s rho: 0.74&quot;,
+           x = 25,
+           y = 0.8) +
+  
+  guides(fill = guide_legend(title = &quot;Gun ownership&quot;, override.aes = list(size = 6), order = 1), 
+         size = guide_legend(title = &quot;White population&quot;), order = 2)</code></pre>
+<p><img src="/blogs/nightingale_files/figure-html/creating_figure_3_in_ggplot-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="an-interpretation" class="section level1">
+<h1>An Interpretation</h1>
+<p>This data shows a number of complex relationships at play. The Spearman’s Rho indicates a relatively strong correlation between the White Suicide Rate and White Homicide Rate across all US states. Interestingly, this relationship does not seem to be well-explained by population, meaning that larger states do not seem particularly prone to high White Suicide or Homicide rates. This is demonstrated clearly by the presencer of states with 500,000 residents or less both in the middle of the cluster, with moderate homicide and suicide rates, and also at each extreme. Most notably, Alaska (AK) and New Mexico (NM) both have small populations, but both high suicide and homicide rates.</p>
+<div id="occams-razor" class="section level2">
+<h2>Occam’s Razor</h2>
+<p>The simplest explanation is often the best. Here, while the rule is not without exception, we can see clearly that the darker datapoints are also those which, in general, experience both higher suicide and higher homicide rates than those which are less dark. In other words, states with higher gun ownership are also those with higher rates of white, non-hispanic male homicide and suicide. The obvious exceptions, such as Arizona and Nevada, do not invalidate this, though they do suggest that (as we would expect) higher homicide and suicide rates are not a function of gun ownership alone.</p>
+<p>This provides compelling evidence in favour of the view that gun ownership and both homicide and suicide are strongly (and positively) related with one another. Regardless, entrenched traditions and gun lobbies, in addition to well-established bureaucracy and a less-than-progressive President, such evidence is repeatedly disregarded and discredited. As such, further research into the causal (rather than associational) relationships between gun ownership and firearms fatalities, and an awareness of what state-level factors condition this relationship, promises to be a critical catalyst for change.</p>
+</div>
+</div>
+
+                        </div>
+                    </section>
+            <!-- Disqus Inject -->
+                
+            </div>
+            
+        <!-- Footer -->
+            
+                <!-- Footer -->
+    <footer id="footer">
+        <div class="inner">
+            <ul class="icons">
+                
+                    <li><a href="https://twitter.com/_AlbertoLambert" class="icon alt fa-twitter" target="_blank"><span class="label">Twitter</span></a></li>
+                
+                    <li><a href="https://www.instagram.com/eggy_crumpet/?hl=en" class="icon alt fa-instagram" target="_blank"><span class="label">Instagram</span></a></li>
+                
+                    <li><a href="https://github.com/alambert-ux" class="icon alt fa-github" target="_blank"><span class="label">GitHub</span></a></li>
+                
+                    <li><a href="https://www.linkedin.com/in/albertolambert/" class="icon alt fa-linkedin" target="_blank"><span class="label">LinkedIn</span></a></li>
+                
+            </ul>
+            <ul class="copyright">
+                <li>&copy; Alberto Lambert 2020</li>
+                
+                <li>Design:  <a href="https://www.html5up.net">HTML5 UP</a></li>
+                
+            </ul>
+        </div>
+    </footer>
+
+            
+        </div>
+
+    <!-- Scripts -->
+        <!-- Scripts -->
+    <!-- jQuery -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery.scrolly.min.js"></script>
+    <script src="/js/jquery.scrollex.min.js"></script>
+    <script src="/js/skel.min.js"></script>
+    <script src="/js/util.js"></script>
+
+    
+
+    <!-- Main JS -->
+    <script src="/js/main.js"></script>
+
+    
+
+    
+
+    </body>
+</html>

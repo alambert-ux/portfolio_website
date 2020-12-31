@@ -1,0 +1,485 @@
+---
+date: "2017-10-31T21:28:43-05:00"
+description: "Which Factors were Associated with Voting Leave in the 2016 EU Referendum?"
+draft: false
+image: pic14.jpg
+keywords: ""
+slug: lincoln
+title: Lincoln
+
+---
+
+# The Problem
+
+The June 2016 Eropean Union (EU) Referendum, which resulted in a United Kingdom's "Brexit" vote to leave the EU, was a significant turning point in international diplomacy. Understanding the potential drivers behind the United Kingsom's decision, voting 52% to 48% to leave, is crucial to glean a better picture of what the nation hopes for as it removes formal political ties with the rest of Europe. From a party perspective, analyses into who Brexit voters are allows them to capitalise off underlying motivations to advance their political standing. For the incumbent government, a deeper understanding of what the nation voted for in 2016 central to negotiating a nationally palatable deal. 
+
+# The Data
+ 
+In the below analyses, a number of datasets, including EU opinion survey data, multilevel (individual and constituency-level) demographic data, and Leave-voting percentages for each UK constituency, are utilised. 
+
+# The Solution 
+
+### Who Voted Leave in 2016?
+
+**First, the required packages are loaded...** 
+
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+
+#LOAD ALL THE NECESSARY PACKAGES FOR QUESTIONS A, B AND C:
+library(arm)
+library(boot)
+library(pROC)
+library(mfx)
+library(ggplot2)
+library(lme4)
+library(data.table)
+library(Metrics)
+library(sjmisc)
+library(sjPlot)
+library(margins)
+library(quanteda)
+library(glmnet)
+library(ggpubr)
+library(Rmisc)
+library(mosaic)
+library(ggthemes)
+library(GGally)
+library(readxl)
+library(here)
+library(skimr)
+library(janitor)
+library(broom)
+library(tidyquant)
+library(infer)
+library(openintro)
+library(kableExtra)
+library(scales)
+library(knitr)
+library(tidyverse)
+
+```
+
+**Next, I estimate constituency-level results (Leave Versus Remain) for the 2016 Referendum...**
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+#Load in the correct data file and review using summary(), to understand its structure:
+load(here::here('data','eusurvey.Rda'))
+summary(e)
+
+load(here::here('data','eupoststrat.Rda'))
+summary(post)
+
+load(here::here('data','existing_estimates.Rda'))
+summary(est)
+
+
+#PREPARING THE DATASET (e) FOR FURTHER ANALYSIS, AS summary() REVEALED THAT THERE IS ITEM NON-RESPONSE WITH REGARD TO THE age PREDICTOR: 
+e$age[e$age<0] <- NA 
+#HAVING RECODED ITEM NON-RESPONSE IN AGE, AS EXPECTED THE MINIMUM AGE RISES TO 18 (MINIMUM VOTING AGE DURING THE 2016 EU REFERENDUM)
+#THE DATASET IS NOW FULLY PREPARED FOR ANALYSIS
+
+#CHECKING HOW MANY CONSTITUENCIES ARE INCLUDED IN THE RAW DATASET FROM WHICH THE MODEL IS CONSTRUCTED, (e)
+length(unique(e$ccode))
+#THIS SHOWS THAT THERE IS DATA FOR 214 CONSTITUENCIES IN (e), AND THUS POSTRATIFICATION MUST BE APPLIED IN ORDER TO GENERATE ESTIMATES FOR ALL 632 CONSTITUENCIES 
+```
+
+**I then estimate an appropriate logistic multilevel model explaining voting for Leave, using predictors in the dataset...**
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+#MODEL X IS A COMPREHENSIVE LOGISTIC MULTILEVEL MODEL WHICH INCLUDES ALL POSSIBLE PREDICTORS. ITS UPPER LEVEL IS CLASSIFIED BY CONSTITUENCY NAME, RATHER THAN CONSTITUENCY CODE.
+multilevel.leave.X <- glmer(leave ~ votecon + voteukip + female + age + highed + lowed +  c_con15 + c_ukip15 + c_unemployed + c_whitebritish + c_deprived + (1|ccode),nAGQ=0,family=binomial(link="logit"),data=e)
+#THIS COMPREHENSIVE MODEL HAS AN MAE OF 10.56% (RELATIVELY POOR PERFORMANCE)
+#THUS, I APPLY AN ITERATIVE BACKWARDS ELIMINATION APPROACH, STARTING FROM THE FIRST LISTED PREDICTOR. THIS IS BY NO MEANS COMPREHENSIVE, AS ALL COMBINATIONS ARE NOT ATTEMPTED, BUT A SERIES OF VIABLE MODELS ARE COMPARED TO OBTAIN THE MODEL WITH A MINIMAL MAE IN THE MOST EFFICIENT PROCESS POSSIBLE.
+#I BEGIN BY ELIMINATING THE FIRST PREDICTOR, votecon, AND WORKING ACROSS THE REGRESSION FORMULA. ANY ELIMINATED VARIABLES WHICH PRODUCE AN MAE LOWER THAN THE LOWEST PREVIOUSLY ACHIEVED MAE ARE OMITTED FROM THE FINAL MODEL
+
+#THE FOLLOWING CODE, CREATING POSTRATIFIED ESTIMATES AND COMPARING THESE TO ACTUAL ESTIMATES USING MAE, IS APPLIED PRACTICALLY HERE TO CALCULATE MAE DURING VARIABLE SELECTION. FOR FULL EXPLANATION OF THESE METHODS AND APPROACHES, PLEASE SEE SECTION E.1 AND SECTION F.1 OF THE APPENDIX.
+post$prediction.X <- predict(multilevel.leave.X,newdata=post,type="response",allow.new.levels=TRUE)
+post$weight.prediction.X <- post$prediction.X*post$percent
+results.X <- data.table(post)[ , .(final.estimate = sum(weight.prediction.X)), by = .(ccode)]
+#THIS PROCESS HAS GENERATED ESTIMATES WHICH ARE POSTRATIFIED BY CONSTITUENCY
+results.X.MAE <- c(results.X$final.estimate)
+#results.X.MAE is a list of the ordered final percentage leave vote estimates only, from the poststratified results
+
+#THE GENERATED PREDICTIONS FOR EACH CONSTITUENCY WILL BE COMPARED WITH THE EXISTING ESTIMATES. HERE I EXTRACT ONLY THE RELEVANT final estimate FROM THE EXISTING ESTIMATES FOR DIRECT COMPARISON VIA MAE
+est.comparison<- est[2:3]
+est.comparison$final.estimate <- est.comparison$estimate
+est.comparison$estimate <- NULL
+est.comparison.MAE <- c(est.comparison$final.estimate)
+
+#THE mae() function is structured as follows: mae(actual, predicted) - as the actual values are provided as 'final.estimate(s)' in the data 'est', and my predictions are 'final.estimate(s)' of results.X (derived from my logistic multilevel model), the code is as follows:
+MAE <- mae(est.comparison.MAE, results.X.MAE)
+10.56-8.41
+#MAE is multiplied by 100 in order to obtain a percentage mean absolute error
+MAE*100
+
+#(1) -votecon               YES, THIS IS OMITTED      MAE = 9.46%
+#(2) -voteukip              NO, THIS IS NOT OMITTED   MAE = 11.02%
+#(3) -female                NO, THIS IS NOT OMITTED   MAE = 9.50%          
+#(4) -age                   YES, THIS IS OMITTED      MAE = 8.50%
+#(5) -highed                NO, THIS IS NOT OMITTED   MAE = 10.22%    
+#(6) -lowed                 NO, THIS IS NOT OMITTED   MAE = 8.79%
+#(7) -c_con15               NO, THIS IS NOT OMITTED   MAE = 9.05%
+#(8) -c_ukip15              YES, THIS IS OMITTED      MAE = 8.46%
+#(9) -c_unemployed          YES, THIS IS OMITTED      MAE = 8.45%     DESPITE NOT SIGNIFICANTLY (+-0.01) REDUCING THE MAE, THIS IS CLEARLY A VARIABLE WHICH RESULTS IN OVERSPECIFICATION, AS ITS PRESENCE DOES NOT GREATLY IMPROVE OR WORSEN MAE
+#(10) -c_whitebritish       NO, THIS IS NOT OMITTED   MAE = 8.90%
+#(11) -c_deprived           NO, THIS IS NOT OMITTED   MAE = 9.41%
+#THIS SHOWS THAT, FROM THE 11-STEP BACKWARDS ELIMINATION, THE OMISSION OF 4 PREDICTORS HAS IMPROVED MAE BY 2.15%. WHILST THIS IS A RELATIVELY SMALL IMPROVEMENT, THIS REFLECTS THE OPTIMAL MODEL AVAILABLE GIVEN THE CONSTRAINT OF TIME WITH REGARD TO MANUAL BACKWARDS SELECTION METHODOLOGIES
+
+#I THEN ADJUST THE RANDOM EFFECTS ASPECT OF THE MODEL, IN ORDER TO ASSESS WHETHER INCLUSION OF CERTAIN RANDOM EFFECTS CAN FURTHER REDUCE THE MAE OF THE MODEL ESTIMATES
+
+#(1) +(c_deprived | ccode)                            MAE = 8.45%
+#(2) +(c_whitebritish | ccode)                        MAE = 8.47%
+#(3) +(c_con15)                                       MAE = 8.46%
+#(4) +(c_deprived + c_whitebritish | ccode)           MAE = 8.45%
+#(5) +(c_deprived + c_con15 | ccode)                  MAE = 8.41(3)%
+#(6) +(c_whitebritish + c_con15 | ccode)              MAE = 8.47%         
+#(7) +(c_deprived + c_whitebritish + c_con15 | ccode) MAE = 8.43%
+
+#THIS PROCESS SHOWS HOW MAE IS MINIMISED WHEN (c_deprived + c_con15 | ccode) IS INCLUDED AS A RANDOM EFFECT, AND SO THIS TERM IS INCLUDED IN THE FINAL MODEL:
+#THUS, THE RESULTING MODEL, FROM THE 11-STEP BACKWARDS ELIMINATION AND 7-STEP RANDOM EFFECT TEST IS:
+multilevel.leave.A <- glmer(leave ~ voteukip + female + highed + lowed + c_con15 + c_whitebritish + c_deprived + (1 + c_deprived + c_con15 |ccode),nAGQ=0,family=binomial(link="logit"),data=e)
+summary(multilevel.leave.A)
+
+#THIS REFLECTS THE FINAL CHOSEN LOGISTIC MULTILEVEL REGRESSION MODEL, WHICH MINIMISES MAE BASED ON THE BACKWARDS ELIMINATION APPROACH APPLIED ABOVE
+#THE MAE OF THIS MODEL IS THEREFORE 8.413%, WITH THE REMAINING PREDICTORS *voteukip*, *female*, *highed*, *lowed*, *c_con15*, *c_whitebritish*, *c_deprived*
+#ON FURTHER TESTING OF PREDICTORS, REMOVAL OF ANY OF THE PREDICTORS IN THIS FINAL MODEL RESULTS IN AN INCREASE IN MAE. THIS SUGGESTS THAT EVEN WITH FURTHER ITERATIONS OF BACKWARD ELIMINATION, MAE, AND THEREFORE THE FORECASTING POWER OF THE CHOSEN MODEL, IS UNLIKELY TO IMPROVE
+
+#HENCE: MODEL X = multilevel.leave.X (THE COMPREHENSIVE MODEL) AND MODEL A = multilevel.leave.A (THE OPTIMAL CHOSEN MODEL, WHICH MINIMISES MAE)
+```
+
+**I now generate the results of the multilevel model to interpret how the various parameters are associated with voting Leave...**
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+summary(multilevel.leave.A)
+
+#BASIC ANALYSIS OF FIXED AND RANDOM EFFECTS AND THEIR STANDARD ERRORS FOR THE OPTIMAL MODEL
+multilevel.fixed_effects <- fixef(multilevel.leave.A)
+multilevel.fixed_effects
+inv.logit(multilevel.fixed_effects)
+se.fixef(multilevel.leave.A)
+
+multilevel.random_effects <- ranef(multilevel.leave.A)
+multilevel.random_effects
+se.ranef(multilevel.leave.A)
+
+coef(multilevel.leave.A)
+se.coef(multilevel.leave.A)
+
+#REVIEWING CHANGES IN PREDICTED PROBABILITY OF LEAVE VOTING, IN ORDER TO INTERPRET HOW VARIABLES AFFECT VOTING TO LEAVE THE EU AND THE RELATIVE MAGNITUDE OF THEIR EFFECT ON PROBABILITY OF VOTING LEAVE AT BOTH AN INDIVIDUAL AND CONSTITUENCY LEVEL
+summary <- summary(multilevel.leave.A)
+fixed.effects <- fixef(multilevel.leave.A)
+coefficients <- coef(multilevel.leave.A)
+coefficients
+```
+
+**I now present multilevel results in a clear visual format: I fix constituency-level variables and compare predicted probability of voting Leave between different levels of individual-level predictors...**
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+
+#BASED ON INITIAL ANALYSIS OF FIXED EFFECTS, I DEFINE A PROFILE FOR A CONTROL INDIVIDUAL FOR A RANDOMLY-SELECTED CONSTITUENCY. THE CONTROL INDIVIDUAL IS A: NON-UKIP VOTER, FEMALE, INTERMEDIATE EDUCATION (NEITHER HIGH NOR LOW EDUCATION) RESIDING IN A CONSTITUENCY REPRESENTING THE MEDIAN PROFILE IN TERMS OF % CONSERVATIVE VOTE, % WHITE BRITISH AND % DEPRAVITY, OF THE 631 CONSTITUENCIES
+X1 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median((post$c_con15)) + coefficients$ccode[1,7]*median((post$c_whitebritish)) + coefficients$ccode[1,8]*median((post$c_deprived))
+X1 <- inv.logit(X1)
+
+#(UKIP VOTER) THIS IS A CHANGE IN PREDICTED PROBABILITY FOR AN INDIVIDUAL WHO VOTED UKIP IN 2015, WITH ALL OTHER CHARACTERISTICS AT CONTROL LEVEL
+X2 <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median((post$c_con15)) + coefficients$ccode[1,7]*median((post$c_whitebritish)) + coefficients$ccode[1,8]*median((post$c_deprived))
+X2 <- inv.logit(X2)
+X2.diff <- X2-X1
+
+#(MALE) THIS IS A CHANGE IN PREDICTED PROBABILITY FOR A MALE INDIVIDUAL, WITH ALL OTHER CHARACTERISTICS AT CONTROL LEVEL
+X3 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median((post$c_con15)) + coefficients$ccode[1,7]*median((post$c_whitebritish)) + coefficients$ccode[1,8]*median((post$c_deprived))
+X3 <- inv.logit(X3)
+X3.diff <- X3-X1
+
+#(HIGH EDUCATION) THIS IS A CHANGE IN PREDICTED PROBABILITY FOR AN INDIVIDUAL WHO IS HIGHLY EDUCATED, WITH ALL OTHER CHARACTERISTICS AT CONTROL LEVEL
+X4 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median((post$c_con15)) + coefficients$ccode[1,7]*median((post$c_whitebritish)) + coefficients$ccode[1,8]*median((post$c_deprived))
+X4 <- inv.logit(X4)
+X4.diff <- X4-X1
+
+#(LOW EDUCATION) THIS IS A CHANGE IN PREDICTED PROBABILITY FOR AN INDIVIDUAL WHO HAS NO EDUCATION, WITH ALL OTHER CHARACTERISTICS AT CONTROL LEVEL
+X5 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*median((post$c_con15)) + coefficients$ccode[1,7]*median((post$c_whitebritish)) + coefficients$ccode[1,8]*median((post$c_deprived))
+X5 <- inv.logit(X5)
+X5.diff <- X5-X1
+
+MULTI.CIPP.1=data.frame(matrix(NA,4,2))
+colnames(MULTI.CIPP.1) <- c("name","estimate")
+MULTI.CIPP.1[1,1] = "UKIP Voter"
+MULTI.CIPP.1[1,2] = X2.diff*100
+
+MULTI.CIPP.1[2,1] = "Male"
+MULTI.CIPP.1[2,2] = X3.diff*100
+
+MULTI.CIPP.1[3,1] = "High Education"
+MULTI.CIPP.1[3,2] = X4.diff*100
+
+MULTI.CIPP.1[4,1] = "Low Education"
+MULTI.CIPP.1[4,2] = X5.diff*100
+
+MULTI.CIPP.1
+
+```
+
+```{r echo=TRUE, fig.show=TRUE, warning=FALSE, results=TRUE, fig.height=5, fig.width=10, fig.align='center'}
+#THIS PLOT SHOWS THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR EACH INDIVIDUAL-LEVEL VARIABLE, RELATIVE TO THE CONTROL PROFILE
+ggplot(MULTI.CIPP.1, aes(y=name, x=estimate), height=.1, col="black") + scale_y_discrete(name="", limits=c("High Education","Low Education","Male","UKIP Voter")) + geom_point(aes(y=name, x=estimate), size=2, col="black", shape=21, fill="red") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Relative to the Control Voter, %") + ggtitle("Individual-Level Change in Predicted Probability of Voting Leave") + geom_text(mapping = aes(label = round(estimate,2), hjust=0.5, vjust=-0.7))
+```
+
+# An Interpretation
+
+### Change in Predicted Probability of Voting Leave Associated with Each Individual-Level Variable
+
+This plot reflects:
+
+*The Change in Predicted Probability of Voting Leave Associated with Each Individual-Level Variable, relative to the Control Voter in a randomly-selected Control Constituency. The Control Voter exhibits the following characteristics: Non-UKIP Voter (2015 Election), Female, Intermediate Education (Neither High nor Low). They occupy a randomly-selected constituency which has a median Percentage Conservative Vote, median Percentage White British population and median Percentage of Depravity (based on demographic data for all 631 constituencies).*
+
+Here I demonstrate the effect of individual-level variables on percentage likelihood of voting Leave. Each point shows the predicted change in probability of voting Leave associated with the variable level, ceteris paribus, relative to a Control Voter predicted to have a 49.8% probability of voting Leave. As expected, UKIP is most strongly associated with voting Leave, a UKIP voter being 49.0% more likely to vote Leave than the Control Voter. Being Male has the weakest 1.43% effect, increasing the probability of voting Leave, whilst having a university degree and having no education each result in a 14.8% and 3.19% lower probability of voting Leave, respectively. Thus, the uneducated and highly educated are both less likely to vote Leave than an individual with some education, though the educated are less likely to vote Leave than either lower education group. This ambiguity suggests a non-linear relationship, though education must be an ordinal variable for this effect to be fully understood.
+
+**To delve deeper into the broader regional drivers of the Leave vote, I fix individual-level variables at specific profiles and compare predicted probabilities between constituency-level predictors...**
+```{r , results=FALSE, message=FALSE, warning=FALSE}
+#***CONTROL VOTER
+
+#BASED ON INITIAL ANALYSIS OF FIXED EFFECTS, I DEFINE A PROFILE FOR A CONTROL VOTER FOR A RANDOMLY-SELECTED CONSTITUENCY WITH CONSTITUENCY-LEVEL CHARACTERISTICS REPRESENTING THE MEDIAN PROFILE OF THE 631 CONSTITUENCIES
+#THE CONTROL VOTER HAS THE FOLLOWING CHARACTERISTICS: NON-UKIP VOTER, FEMALE, INTERMEDIATE EDUCATION (NEITHER HIGH NOR LOW EDUCATION)
+A1 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+A1 <- inv.logit(A1)
+
+#(C_CON15) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE CONTROL INDIVIDUAL, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX CONSERVATIVE VOTE IN THE 2015 GENERAL ELECTION, WITH ALL OTHER variables AS IN THE CONTROL
+A2.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*min(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+A2.min <- inv.logit(A2.min)
+
+A2.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*max(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+A2.max <- inv.logit(A2.max)
+A2.diff <- A2.max-A2.min
+
+#(C_WHITEBRITISH)  I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE CONTROL INDIVIDUAL, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX WHITE BRITISH POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+A3.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*min(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+A3.min <- inv.logit(A3.min)
+
+A3.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*max(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+A3.max <- inv.logit(A3.max)
+A3.diff <- A3.max-A3.min
+
+#(C_DEPRIVED) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE CONTROL INDIVIDUAL, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX DEPRIVED POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+A4.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*min(post$c_deprived)
+A4.min <- inv.logit(A4.min)
+
+A4.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*max(post$c_deprived)
+A4.max <- inv.logit(A4.max)
+A4.diff <- A4.max-A4.min
+
+#***UKIP VOTER: ALL ELSE CONTROL
+#THE UKIP VOTER HAS THE FOLLOWING CHARACTERISTICS (ALL CHARACTERISTICS IDENTICAL TO THE CONTROL VOTER, EXCEPT THEY VOTED UKIP IN THE 2015 GENERAL ELECTION): UKIP VOTER, FEMALE, INTERMEDIATE EDUCATION (NEITHER HIGH NOR LOW EDUCATION), FOR A RANDOMLY-SELECTED CONSTITUENCY WITH CONSTITUENCY-LEVEL CHARACTERISTICS REPRESENTING THE MEDIAN PROFILE OF THE 631 CONSTITUENCIES
+B1 <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+B1 <- inv.logit(B1)
+
+#(C_CON15) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE UKIP VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX CONSERVATIVE VOTE IN THE 2015 GENERAL ELECTION, WITH ALL OTHER variables AS IN THE CONTROL
+B2.min <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*min(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+B2.min <- inv.logit(B2.min)
+
+B2.max <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*max(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+B2.max <- inv.logit(B2.max)
+B2.diff <- B2.max-B2.min
+
+#(C_WHITEBRITISH) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE UKIP VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX WHITE BRITISH POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+B3.min <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*min(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+B3.min <- inv.logit(B3.min)
+
+B3.max <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*max(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+B3.max <- inv.logit(B3.max)
+B3.diff <- B3.max-B3.min
+
+#(C_DEPRIVED) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE UKIP VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX DEPRIVED POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+B4.min <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*min(post$c_deprived)
+B4.min <- inv.logit(B4.min)
+
+B4.max <- fixed.effects[1] + coefficients$ccode[1,2]*1 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*max(post$c_deprived)
+B4.max <- inv.logit(B4.max)
+B4.diff <- B4.max-B4.min
+
+#***MALE VOTER: ALL ELSE CONTROL
+
+#THE MALE VOTER HAS THE FOLLOWING CHARACTERISTICS (ALL CHARACTERISTICS IDENTICAL TO THE CONTROL VOTER, EXCEPT THEY ARE MALE): NON-UKIP VOTER, MALE, INTERMEDIATE EDUCATION (NEITHER HIGH NOR LOW EDUCATION), FOR A RANDOMLY-SELECTED CONSTITUENCY WITH CONSTITUENCY-LEVEL CHARACTERISTICS REPRESENTING THE MEDIAN PROFILE OF THE 631 CONSTITUENCIES
+C1 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+C1 <- inv.logit(C1)
+
+#(C_CON15) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE MALE VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX CONSERVATIVE VOTE IN THE 2015 GENERAL ELECTION, WITH ALL OTHER variables AS IN THE CONTROL
+C2.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*min(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+C2.min <- inv.logit(C2.min)
+
+C2.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*max(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+C2.max <- inv.logit(C2.max)
+C2.diff <- C2.max-C2.min
+
+#(C_WHITEBRITISH) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE MALE VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX WHITE BRITISH POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+C3.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*min(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+C3.min <- inv.logit(C3.min)
+
+C3.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*max(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+C3.max <- inv.logit(C3.max)
+C3.diff <- C3.max-C3.min
+
+#(C_DEPRIVED) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE MALE VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX DEPRIVED POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+C4.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*min(post$c_deprived)
+C4.min <- inv.logit(C4.min)
+
+C4.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*0 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*max(post$c_deprived)
+C4.max <- inv.logit(C4.max)
+C4.diff <- C4.max-C4.min
+
+#***HIGH EDUCATION, ALL ELSE CONTROL
+
+#THE HIGH EDUCATION VOTER HAS THE FOLLOWING CHARACTERISTICS (ALL CHARACTERISTICS IDENTICAL TO THE CONTROL VOTER, EXCEPT THEY ARE EDUCATED TO DEGREE LEVEL OR HIGHER): NON-UKIP VOTER, FEMALE, HIGH EDUCATION, FOR A RANDOMLY-SELECTED CONSTITUENCY WITH CONSTITUENCY-LEVEL CHARACTERISTICS REPRESENTING THE MEDIAN PROFILE OF THE 631 CONSTITUENCIES
+D1 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+D1 <- inv.logit(D1)
+
+#(C_CON15) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE HIGH EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX CONSERVATIVE VOTE IN THE 2015 GENERAL ELECTION, WITH ALL OTHER variables AS IN THE CONTROL
+D2.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*min(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+D2.min <- inv.logit(D2.min)
+
+D2.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*max(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+D2.max <- inv.logit(D2.max)
+D2.diff <- D2.max-D2.min
+
+#(C_WHITEBRITISH) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE HIGH EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX WHITE BRITISH POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+D3.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*min(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+D3.min <- inv.logit(D3.min)
+
+D3.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*max(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+D3.max <- inv.logit(D3.max)
+D3.diff <- D3.max-D3.min
+
+#(C_DEPRIVED) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE HIGH EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX DEPRIVED POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+D4.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*min(post$c_deprived)
+D4.min <- inv.logit(D4.min)
+
+D4.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*1 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*max(post$c_deprived)
+D4.max <- inv.logit(D4.max)
+D4.diff <- D4.max-D4.min
+
+#***LOW EDUCATION: ALL ELSE CONTROL
+
+#THE LOW EDUCATION VOTER HAS THE FOLLOWING CHARACTERISTICS (ALL CHARACTERISTICS IDENTICAL TO THE CONTROL VOTER, EXCEPT THEY HAVE NO EDUCATIONAL QUALIFICATIONS): NON-UKIP VOTER, FEMALE, LOW EDUCATION, FOR A RANDOMLY-SELECTED CONSTITUENCY WITH CONSTITUENCY-LEVEL CHARACTERISTICS REPRESENTING THE MEDIAN PROFILE OF THE 631 CONSTITUENCIES
+E1 <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*0 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+E1 <- inv.logit(E1)
+
+#(C_CON15) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE LOW EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX CONSERVATIVE VOTE IN THE 2015 GENERAL ELECTION, WITH ALL OTHER variables AS IN THE CONTROL
+E2.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*min(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+E2.min <- inv.logit(E2.min)
+
+E2.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*max(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+E2.max <- inv.logit(E2.max)
+E2.diff <- E2.max-E2.min
+
+#(C_WHITEBRITISH) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE LOW EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX WHITE BRITISH POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+E3.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*min(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+E3.min <- inv.logit(E3.min)
+
+E3.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*max(post$c_whitebritish) + coefficients$ccode[1,8]*median(post$c_deprived)
+E3.max <- inv.logit(E3.max)
+E3.diff <- E3.max-E3.min
+
+#(C_DEPRIVED) I FIND THE CHANGE IN PREDICTED PROBABILITY OF VOTING LEAVE FOR THE LOW EDUCATION VOTER, BETWEEN RESIDING IN A CONSTITUENCY WITH A MIN AND MAX DEPRIVED POPULATION, WITH ALL OTHER variables AS IN THE CONTROL
+E4.min <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*min(post$c_deprived)
+E4.min <- inv.logit(E4.min)
+
+E4.max <- fixed.effects[1] + coefficients$ccode[1,2]*0 + coefficients$ccode[1,3]*1 + coefficients$ccode[1,4]*0 + coefficients$ccode[1,5]*1 + coefficients$ccode[1,6]*median(post$c_con15) + coefficients$ccode[1,7]*median(post$c_whitebritish) + coefficients$ccode[1,8]*max(post$c_deprived)
+E4.max <- inv.logit(E4.max)
+E4.diff <- E4.max-E4.min
+
+#I NOW CREATE A MATRIX WHICH SUMMARISES ALL OF THESE CHANGES IN PREDICTED PROBABILITY, AS PERCENTAGES
+MULTI.CIPP.3=data.frame(matrix(NA,3,6))
+colnames(MULTI.CIPP.3) <- c("name","ControlEstimate", "UKIPVoterEstimate", "MaleEstimate", "HighEducationEstimate", "LowEducationEstimate")
+
+MULTI.CIPP.3[1,1] = "% Conservative Vote"
+MULTI.CIPP.3[1,2] = A2.diff*100
+MULTI.CIPP.3[1,3] = B2.diff*100
+MULTI.CIPP.3[1,4] = C2.diff*100
+MULTI.CIPP.3[1,5] = D2.diff*100
+MULTI.CIPP.3[1,6] = E2.diff*100
+
+MULTI.CIPP.3[2,1] = "% White British Population"
+MULTI.CIPP.3[2,2] = A3.diff*100
+MULTI.CIPP.3[2,3] = B3.diff*100
+MULTI.CIPP.3[2,4] = C3.diff*100
+MULTI.CIPP.3[2,5] = D3.diff*100
+MULTI.CIPP.3[2,6] = E3.diff*100
+
+MULTI.CIPP.3[3,1] = "% Deprived Population"
+MULTI.CIPP.3[3,2] = A4.diff*100
+MULTI.CIPP.3[3,3] = B4.diff*100
+MULTI.CIPP.3[3,4] = C4.diff*100
+MULTI.CIPP.3[3,5] = D4.diff*100
+MULTI.CIPP.3[3,6] = E4.diff*100
+
+MULTI.CIPP.3
+
+#THIS EXHAUSTIVE COMPARATIVE SUMMARY OF THE PLOTS ABOVE ALLOWS DIRECT VISUAL (AND NUMERICAL) COMPARISON OF THE EFFECT OF CONSTITUENCY-LEVEL VARIABLES ON PROBABILITY OF VOTING TO LEAVE THE EU BETWEEN MULTIPLE INDIVIDUAL-LEVEL PROFILES
+control <- ggplot(MULTI.CIPP.3, aes(y=name, x=40), height=.1, col="black") + scale_y_discrete(name="", limits=c("% White British Population","% Conservative Vote","% Deprived Population")) + geom_point(aes(y=name, x=ControlEstimate), size=2, col="black", shape=21, fill="red") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Between Maximum and Minimum Constituency-Level Values, %") + ggtitle("Constituency-Level Change in Predicted Probability of Voting Leave") + geom_text(mapping = aes(label = round(ControlEstimate,2), hjust=3, vjust=-0.7))
+UKIP <- ggplot(MULTI.CIPP.3, aes(y=name, x=40), height=.1, col="black") + scale_y_discrete(name="", limits=c("% White British Population","% Conservative Vote","% Deprived Population")) + geom_point(aes(y=name, x=UKIPVoterEstimate), size=2, col="black", shape=21, fill="purple") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Between Maximum and Minimum Constituency-Level Values, %") + geom_text(mapping = aes(label = round(UKIPVoterEstimate,2), hjust=3.9, vjust=-0.7))
+male <- ggplot(MULTI.CIPP.3, aes(y=name, x=40), height=.1, col="black") + scale_y_discrete(name="", limits=c("% White British Population","% Conservative Vote","% Deprived Population")) + geom_point(aes(y=name, x=MaleEstimate), size=2, col="black", shape=21, fill="blue") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Between Maximum and Minimum Constituency-Level Values, %") + geom_text(mapping = aes(label = round(MaleEstimate,2), hjust=3, vjust=-0.7))
+highed <- ggplot(MULTI.CIPP.3, aes(y=name, x=40), height=.1, col="black") + scale_y_discrete(name="", limits=c("% White British Population","% Conservative Vote","% Deprived Population")) + geom_point(aes(y=name, x=HighEducationEstimate), size=2, col="black", shape=21, fill="green") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Between Maximum and Minimum Constituency-Level Values, %") + geom_text(mapping = aes(label = round(HighEducationEstimate,2), hjust=3, vjust=-0.7))
+lowed <- ggplot(MULTI.CIPP.3, aes(y=name, x=40), height=.1, col="black") + scale_y_discrete(name="", limits=c("% White British Population","% Conservative Vote","% Deprived Population")) + geom_point(aes(y=name, x=LowEducationEstimate), size=2, col="black", shape=21, fill="yellow") + geom_vline(xintercept=0) + scale_x_continuous(name="Change in Probability of Voting Leave in the EU Referendum Between Maximum and Minimum Constituency-Level Values, %") + geom_text(mapping = aes(label = round(LowEducationEstimate,2), hjust=3, vjust=-0.7))
+```
+
+**This figure compares the change in predicted probability of voting Leave associated with each Constituency-level variable, between multiple individual-level voter profiles...**
+```{r echo=TRUE, fig.show=TRUE, warning=FALSE, results=TRUE, fig.height=15, fig.width=12, fig.align='center'}
+figure <- ggarrange(control, UKIP, male, highed, lowed, labels = c("Control Voter", "UKIP Voter", "Male", "Low Education", "High Education"), ncol = 1, nrow = 5, font.label = list(size = 10), hjust = c(-.8,-0.95,-2.35,-0.73,-.7))
+figure
+```
+
+# Another Interpretation
+
+### Change in Predicted Probability of Voting Leave Associated with Each Constituency-Level Variable
+
+This plot reflects: 
+
+*Change in Predicted Probability of Voting Leave Associated with Each Constituency-Level Variable (the Change in Predicted Probability of Voting Leave for a Fixed Voter, from occupying a randomly selected constituency with a Minimum observed Constituency-Level Percentage to a constituency with a Maximum observed Constituency-Level Percentage, ceteris paribus). Comparison is between constituency-level effects on the Control Voter (see Figure above), and 4 Profiles differing from the Control Voter in only 1 individual-level variable.*
+
+Evidently, the probability of voting Leave for voters with varying individual-level characteristics (based on a Control Voter) is affected differently by constituency-level variables. Higher percentages of Deprivation, Conservative Voters and White British Population all increase probability of voting Leave. The effect of each constituency-level variable is prominent, affecting voting tendencies at most (as maximum and minimum values are taken for a randomly-selected constituency) by 18.1%-31.5%: with deviation less than 4.00% across individuals of differing sex and education. For these profiles, Deprivation most increases probability of voting Leave: a voter being on average 31.0% more likely to vote Leave in a constituency with the highest depravity (30.8%) than one with minimum depravity (10.2%), with other constituency-level variables at their median. Of lower magnitude are Conservative Voting (28.8%) and White British Population (20.9%), though each have similarly large average effects. 
+
+Further, we find that being a UKIP voter almost entirely eliminates the effect of constituency-level variables: each affecting a UKIP voter’s probability of voting leave by less than 2.00%. Regardless of their constituency, UKIP voters are approximately equally likely to vote Leave, revealing that, though each constituency-level variable increases probability of voting Leave, the magnitude of their effect can depend heavily on individual-level characteristics.
+
+Having identified such a strong relationship between voting for the UKIP party and voting Leave, I now explore how the party individuals vote for is related to their Brexit voting decisions. This requires a new dataset, of the cleaned Brexit result.
+
+# Some Deeper Investigation...
+
+**I now create a plot demonstrating the relationship between party constituency-level party percentage vote in the 2015 general election and the pervcentage leave vote in the same constituencies in June 2016...**
+
+```{r load_brexit_result, results=FALSE, message=FALSE, warning=FALSE}
+
+brexit_results <- read_csv(here::here("data", "brexit_results.csv"))
+
+```
+
+```{r brexit_plot, fig.width=10, fig.height=6, warning=FALSE}
+
+h <-brexit_results %>%
+  
+ggplot(aes( y = leave_share)) +
+  geom_point(alpha=0.4,aes(x=con_2015),pch=19,size=0.9,col="#0087DC") +
+  geom_point(alpha=0.4,aes(x=lab_2015),pch=19,size=0.9,col="#D50000") +
+  geom_point(alpha=0.4,aes(x=ld_2015),pch=19,size=0.9,col="#FDBB30") +
+  geom_point(alpha=0.4,aes(x=ukip_2015),pch=19,size=0.9,col="#EFE600") +
+ 
+  
+  scale_y_continuous(breaks = c(20,40,60,80, 100)) +
+  scale_x_continuous(breaks = c(0,20,40,60,80, 100)) +
+  scale_color_manual(values = c('#0087DC', '#D50000','#FDBB30', '#EFE600'),
+                     labels = c('Conservative', 'Labour', 'Lib Dems', 'UKIP')) +
+  theme_bw() +
+  theme(
+  axis.title.x = element_text(size=rel(0.9)),
+  axis.title.y = element_text(size=rel(0.9)),
+  title=element_text(size=rel(1)),
+  legend.position="bottom",
+  legend.title=element_blank()
+  )+
+    labs(title="How political affiliation translated to Brexit Voting",
+         y="Leave % in the 2016 Brexit referendum",
+         x="Party % in the UK 2015 general election"
+    )+
+    guides(col = guide_legend( title="legend"
+                             ))+
+  NULL
+h
+
+```
+
+## Occam's Razor
+
+It is evident that there is heterogeneity in constituency-level percentage Leave vote by party. Most evidently, our conclusions on the relationship between UKIP voting and Leave voting are ratified, since the Yellow UKIP points show the strongest positive correlation: higher constituency-level UKIP voting in 2015 was strongly related to higher constituency-level Leave voting in 2016. It is also clear that voting Liberal Democrat is not paticularly related to Leave or Remain voting: not only is the level of 2015 voting for the LibDems relatively constand and low compared to other parties, but the spread of Leave voting in these constituencies is extremely large. Contrastingly, both the proportion of 2015 votes received for the Labour and Conservative parties and the proportion of these constituencies that voted leave, vary widely. However, on average, it is clear that constituencies that voted for the Conservative party in 2015 were more strongly associated with higher percentage leave voting in 2016 than more Labour-voting constituencies. 

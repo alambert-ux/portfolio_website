@@ -1,0 +1,294 @@
+<!DOCTYPE HTML>
+<html>
+
+    <head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<meta name="description" content="Personal Portfolio Website for Applied Statistics (MAM2021)">
+	<meta name="author" content="Alberto Lambert">
+	<meta name="generator" content="Hugo 0.74.3" />
+	<title>Odum &middot; Alberto Lambert</title>
+	<!-- Stylesheets -->
+	
+	<link rel="stylesheet" href="/css/main.css"/>
+	
+	
+
+	
+
+	<!-- Custom Fonts -->
+	<link href="/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+	
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+	<link rel="icon" type="image/x-icon" href="/favicon.ico">
+	
+
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+	<script src="js/ie/html5shiv.js"></script>
+	<script src="js/ie/html5shiv.jsrespond.min.js"></script>
+	<![endif]-->
+</head>
+
+    <body>
+
+    <!-- Wrapper -->
+        <div id="wrapper">
+
+            <!-- Header -->
+    <header id="header" class="alt">
+        <a href="/" class="logo"><strong>Alberto Lambert</strong> <span>Portfolio</span></a>
+        <nav>
+            <a href="#menu">Menu</a>
+        </nav>
+    </header>
+
+<!-- Menu -->
+    <nav id="menu">
+        <ul class="links">
+            
+                <li><a href="/">Home</a></li>
+            
+                <li><a href="/post/life">Life</a></li>
+            
+                <li><a href="/post/work">Work</a></li>
+            
+
+        </ul>
+        <ul class="actions vertical">
+            
+            
+                <li><a href="/blogs" class="button fit">Projects</a></li>
+            
+        </ul>
+    </nav>
+
+        <!-- Main -->
+            <div id="main" class="alt">
+
+                
+                    <section id="one">
+                        <div class="inner">
+                            <header class="major">
+                                <h1>Odum</h1>
+                            </header>
+                            
+                                <span class="image main"><img src="/img/blogs/pic12.jpg" alt="" /></span>
+                            
+                            
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="the-problem" class="section level1">
+<h1>The Problem</h1>
+<p>Santander Bikes (or “Boris Bikes”, in recognition of the then-Mayor of London Boris Johnson), are widely used across the City of London by tens of thousands of people every day. Understanding how many bikes are likely to be in use on a given day of the week, and a given month of the year is crucial for making decisions around how many bikes to provide, how often they need to be serviced, and make revenue and profitability forecasts crucial for informing future investment in “green” technologies and services in the City of London.</p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p>I employ a key dataset of from Transport for London, to visualise how bike useage varies across days, weeks and months, and how this deviates from long-term expectations. The data is pulled live from TfL, and runs from 2015 to the present day.</p>
+</div>
+<div id="the-solution" class="section level1">
+<h1>The Solution</h1>
+<div id="how-london-bike-hires-vary-over-weekdays-months-and-years-versus-long-term-expectations" class="section level3">
+<h3>How London Bike Hires Vary Over Weekdays, Months and Years, Versus Long-Term Expectations</h3>
+<p><strong>First, the required packages are loaded…</strong></p>
+<pre class="r"><code>library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(lubridate)
+library(here)
+library(skimr)
+library(janitor)
+library(httr)
+library(readxl)
+library(vroom)
+library(infer)
+library(patchwork)
+library(kableExtra)
+library(scales) </code></pre>
+<p><strong>Next, the dataset itself is imported and cleaned…</strong></p>
+<pre class="r"><code>url &lt;- &quot;https://data.london.gov.uk/download/number-bicycle-hires/ac29363e-e0cb-47cc-a97a-e216d900a6b0/tfl-daily-cycle-hires.xlsx&quot;
+
+# Download TFL data to temporary file
+httr::GET(url, write_disk(bike.temp &lt;- tempfile(fileext = &quot;.xlsx&quot;)))</code></pre>
+<pre class="r"><code># Use read_excel to read it as dataframe
+bike0 &lt;- read_excel(bike.temp,
+                   sheet = &quot;Data&quot;,
+                   range = cell_cols(&quot;A:B&quot;))
+
+# change dates to get year, month, and week
+bike &lt;- bike0 %&gt;% 
+  clean_names() %&gt;% 
+  rename (bikes_hired = number_of_bicycle_hires) %&gt;% 
+  mutate (year = year(day),
+          month = lubridate::month(day, label = TRUE),
+          week = isoweek(day))</code></pre>
+</div>
+<div id="monthly-deviations-in-bike-usage" class="section level2">
+<h2>Monthly Deviations in Bike Usage</h2>
+<p><strong>We now create a facet grid that plots bikes hired by month and year…</strong></p>
+<pre class="r"><code>bike_mon &lt;- bike %&gt;%
+  filter(year &gt;= 2015) %&gt;%
+  group_by(year, month)%&gt;%
+  summarise(mean_hired.act=mean(bikes_hired))%&gt;% # average number of bikes hired each day for each month in each year
+  group_by(month) %&gt;%
+  mutate(mean_hired.exp=mean(mean_hired.act)) # average of *the average number of bikes hired each day in each month*, across all years from 2015-2020 i.e. the value for month X is obtained by averaging the average number of bikes hired each day in month X from 2015-2020. 
+
+#we publish the underlying data set as a clean table
+  kbl(bike_mon, col.names=c(&quot;Year&quot;,&quot;Month&quot;,&quot;Mean Number of Bikes Hired Daily (Actual)&quot;, &quot;Mean Number of Bikes Hired Daily (Expected)&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<pre class="r"><code>monthly_plot &lt;- ggplot(bike_mon,aes(x=month,group=1))+   
+  geom_line(aes(y=mean_hired.exp),color=&quot;blue&quot;,size=0.7) + 
+  geom_line(aes(y=mean_hired.act),color=&quot;black&quot;,size=0.3)+
+  
+ geom_ribbon(aes(x=month,ymin=mean_hired.exp,ymax=pmax(mean_hired.act,mean_hired.exp)),fill=&quot;green&quot;,alpha=0.2)+ 
+geom_ribbon(aes(x=month,ymin=pmin(mean_hired.act,mean_hired.exp),ymax=mean_hired.exp),fill=&quot;red&quot;,alpha=0.2) + # 2 ribbons for each of the color(above and below the blue constant line)
+  
+facet_wrap(~year)+
+    theme_minimal() +
+  
+  #controlling size of axis titles and text 
+   theme(legend.position = &quot;none&quot;,
+         axis.title.y = element_text(size=rel(1)),
+         plot.title = element_text(size=rel(1.4),face=&quot;bold&quot;),
+         axis.text.x = element_text(size=rel(0.8),angle=0))+
+  
+  # adding labels and source annotation
+  labs(y = &quot;Bike rentals&quot;,
+       x = NULL,
+       title = &quot;Monthly changes in TfL bike rentals&quot;,
+       subtitle = &quot;Change from monthly average shown in blue 
+and calculated between 2015-2019&quot;, caption=&quot;Source: TfL, London Data Store&quot;)
+
+monthly_plot</code></pre>
+<p><img src="/blogs/odum_files/figure-html/monthly_changes_plot-1.png" width="960" /></p>
+<div id="an-interpretation" class="section level3">
+<h3>An Interpretation</h3>
+<p>Distribution of Bikes hired in the month of May and June in 2020 varies significantly from previous years. The standard deviation has increased as the curve looks flattened out. As a result the peak is not occurring at the usual value of around 40k bikes hired. This can be attributed to Lockdown measures put in place in response to the COVID-19 outbreak.</p>
+<p>This plot shows clearly how February-May 2020 marks a stark contrast to all previous years, due to Lockdown measures. Interestingly, there is also a substantial “rebound” from May to July as bike usage increases well over the long-term average expected level. It is interesting to see the difference between 2018 and 2019, too: 2018 experienced “the beast from the East”, a cold front that caused snow throughout February and March, which evidently depressed bike usage well below the long-term average. Contrastingly, 2019 experienced a moderate Spring. Less consistent is the fact that bike usage falls below the long-term expectation across Summer 2019, which included some of the hottest days on UK record. This indicates that both extreme heat and cold inhibit bike usage in London, a relationship which warrants further investigation</p>
+</div>
+</div>
+<div id="weekly-deviations-in-bike-usage" class="section level2">
+<h2>Weekly Deviations in Bike Usage</h2>
+<p>The plot below looks at percentage changes from the expected level of weekly rentals. The two grey shaded rectangles correspond to the second (weeks 14-26) and fourth (weeks 40-52) quarters.</p>
+<pre class="r"><code>bike_week &lt;- bike %&gt;%
+  filter(year &gt;=2015) %&gt;%
+  group_by(year,week)%&gt;% # average number of bikes hired each day for each week in each year
+  summarise(mean_hired.act=mean(bikes_hired))%&gt;%
+  group_by(week) %&gt;%
+  mutate(mean_hired.exp=mean(mean_hired.act)) # average of *the average number of bikes hired each day in each week*, across all years from 2015-2020 i.e. the value for week X is obtained by averaging the average number of bikes hired each day in week X from 2015-2020. 
+
+# adding percentage change in weekly average of bikes hired across different years
+bike_week$mean_hired.exc = ((bike_week$mean_hired.act-bike_week$mean_hired.exp)/bike_week$mean_hired.exp)
+
+#we publish the underlying data set as a clean table
+  kbl(bike_week, col.names=c(&quot;Year&quot;,&quot;Week&quot;,&quot;Mean Number of Bikes Hired Daily (Actual)&quot;, &quot;Mean Number of Bikes Hired Daily (Expected)&quot;, &quot;Deviation of Actual Bikes Hired from Expected Bikes Hired (Proportion)&quot;)) %&gt;%
+  kable_styling()</code></pre>
+<pre class="r"><code>weekly_plot &lt;- bike_week %&gt;%
+  ggplot(aes(x=week,group=1))+ 
+  geom_line(aes(y=mean_hired.exc),size=0.3) + # add line for change rate
+  
+  # add grey tiles for 2 quarters
+  geom_tile(aes(x = 19.5, y = 0, width = 13, height = 1.2), fill = &#39;grey&#39;, alpha = 0.01) +
+  geom_tile(aes(x = 46, y = 0, width = 13, height = 1.2), fill = &#39;grey&#39;, alpha = 0.01) +  
+  
+  # if change rate &gt; 0 , fill with green
+  geom_ribbon(aes(x=week,ymin=0,ymax=pmax(bike_week$mean_hired.exc,0)),fill=&quot;green&quot;,alpha=0.3)+
+  # if change rate &lt; 0 , fill with red
+  geom_ribbon(aes(x=week,ymin=pmin(bike_week$mean_hired.exc,0),ymax=0),fill=&quot;red&quot;,alpha=0.3) +
+  
+  facet_wrap(~year) +
+  scale_x_continuous(limits = c(0, 53),breaks=c(13,26,39,53)) + # specify breaks for x
+  scale_y_continuous(labels = label_percent(),limits = c(-0.6,0.6),breaks=c(-0.6,-0.3,0,0.3,0.6)) +
+  theme_minimal() +
+  
+  # adjust title text size
+  theme(legend.position = &quot;none&quot;,
+        axis.title.y = element_text(size=rel(1)),
+        plot.title = element_text(size=rel(1.4),face=&quot;bold&quot;),
+        axis.text.x = element_text(size=rel(0.8),angle=0,face=&quot;bold&quot;)) +
+  # add labs
+  labs(title = &#39;Weekly change in TfL bike rentals&#39;,
+       y = &#39;&#39;,
+       subtitle = &#39;% change from weekly averages
+calculated between 2015-2019&#39;, caption=&quot;Source: TfL, London Data Store&quot;) +
+  
+  # if change rate &gt; 0 , rug = green
+  geom_rug(data = subset(bike_week,mean_hired.exc &gt; 0), color = &#39;green&#39;, sides=&quot;b&quot;, size = 0.3) +
+  # if change rate &lt; 0 , rug = red
+  geom_rug(data = subset(bike_week, mean_hired.exc&lt;0), color = &#39;red&#39;, sides=&quot;b&quot;, size = 0.3) 
+ 
+weekly_plot</code></pre>
+<p><img src="/blogs/odum_files/figure-html/weekly_change_percentage_plot-1.png" width="960" /></p>
+<div id="an-interpretation-1" class="section level3">
+<h3>An Interpretation</h3>
+<p>Here, again, the impact of COVID-19 and the Spring 2020 Lockdown is evident. While in both 2017 and 2019 Week 13 was the highest peak in percentage change in bike usage across the whole year, in 2020 this same week was the trough, as Lockdown measures were imposed on the city.</p>
+<p><strong>A Note on Long-Term Averages</strong></p>
+<p>Expected rentals (weekly or monthly) are generated by averaging weekly or monthly averages of daily bike usage across the years surveyed. In this context, we have 6 averages for each week/month, across the period 2015-2020, which we average to calculate expectations. Given that each of these weekly/monthly averages is not substantially different across years, we have no major outliers in our data, which means that using the median to calculate expected rentals is not particularly beneficial.</p>
+<p>In fact, we can expect that the average weekly/monthly rentals are normally distributed for a given week/month across years. i.e. if we plotted the weekly/monthly average daily bike usage for a given week/month for each of N years, we would find that the distribution of averages for each week/month would be normally distributed across all N years in our sample.</p>
+<p>As such, the mean is the optimal measure, since the expected rentals is a function (cross-year average) of the weekly/monthly average of daily bike rentals, which we are (justifiably) assuming is normally distributed for each week/month across the years surveyed.</p>
+</div>
+</div>
+<div id="occams-razor" class="section level2">
+<h2>Occam’s Razor</h2>
+<p>This brief analysis has demonstrated the dramatic effect of COVID-19 government-imposed measures on usage of communally accessible bikes in the City of London. There is significant scope for further analyses, specifically converting these insights into revenue estimates and forecasting losses incurred as a result of the crisis itself. However, for now these profitability considerations remain beyond the scope of my study.</p>
+</div>
+</div>
+
+                        </div>
+                    </section>
+            <!-- Disqus Inject -->
+                
+            </div>
+            
+        <!-- Footer -->
+            
+                <!-- Footer -->
+    <footer id="footer">
+        <div class="inner">
+            <ul class="icons">
+                
+                    <li><a href="https://twitter.com/_AlbertoLambert" class="icon alt fa-twitter" target="_blank"><span class="label">Twitter</span></a></li>
+                
+                    <li><a href="https://www.instagram.com/eggy_crumpet/?hl=en" class="icon alt fa-instagram" target="_blank"><span class="label">Instagram</span></a></li>
+                
+                    <li><a href="https://github.com/alambert-ux" class="icon alt fa-github" target="_blank"><span class="label">GitHub</span></a></li>
+                
+                    <li><a href="https://www.linkedin.com/in/albertolambert/" class="icon alt fa-linkedin" target="_blank"><span class="label">LinkedIn</span></a></li>
+                
+            </ul>
+            <ul class="copyright">
+                <li>&copy; Alberto Lambert 2020</li>
+                
+                <li>Design:  <a href="https://www.html5up.net">HTML5 UP</a></li>
+                
+            </ul>
+        </div>
+    </footer>
+
+            
+        </div>
+
+    <!-- Scripts -->
+        <!-- Scripts -->
+    <!-- jQuery -->
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery.scrolly.min.js"></script>
+    <script src="/js/jquery.scrollex.min.js"></script>
+    <script src="/js/skel.min.js"></script>
+    <script src="/js/util.js"></script>
+
+    
+
+    <!-- Main JS -->
+    <script src="/js/main.js"></script>
+
+    
+
+    
+
+    </body>
+</html>

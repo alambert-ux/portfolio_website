@@ -1,0 +1,56 @@
+---
+date: "2017-10-31T22:42:51-05:00"
+description:
+draft: false
+image: sana.jpg
+keywords: ""
+slug: work
+title: Work
+
+---
+
+# Experiences
+
+## 1. Financial Services
+
+* Asset Management Summer Intern @ Henderson Rowe, ultra-high net worth fund management
+* Asset Management Summer Intern @ Ruffer LLP, global hedge fund
+* Asset Management Summer Intern @ Alquity Investment Management, ethical investment fund
+* Global Investment Research Spring Intern @ Goldman Sachs
+* Summer Intern @ Odey Asset Management, global hedge fund
+* Global Investment Research Summer Analyst @ Goldman Sachs
+
+## 2. Technology
+
+* Business Analyst @ Sana Labs, pioneer in AI-for-education  
+* Pro-Bono Consultant @ Depop, pioneer of social commerce  
+
+## 3. Nonprofit & Volunteering
+
+* Director of Partnerships @ London Strategic Consulting, London's foremost student-led pro bono consultancy  
+* Banking Mentor @ Sponsors for Education Opportunity (SEO) London  
+* Summer Internship Mentor @ University College London Investment Society  
+* Spring Internship Mentor @ University College London Economics & Finance Society  
+* Private Tutor and Mentor @ Wymondham College  
+
+## 4. Academia 
+
+* Postgraduate Tutor of Development Economics @ University College London, supervised directly by Professor Beatriz Amendariz  
+
+# Education
+
+* Wymondham College - GCSE (`13A*`)  
+* Wymondham College - A-Level (`3A*`)  
+* University College London - BSc Political Science and Economics with Data Science - `First Class Honours, All Years`  
+* London Business School - MSc Analytics and Management - `TBC`  
+
+# Ambitions
+
+I aspire to a career in strategic management and product development for social enterprise, in particular bringing together cutting-edge technology and analytics to advance healthcare and education worldwide. 
+
+Whilst developing strategic research for Sana Labs, a growth-stage AI company with a vision of democratising personalised education, I began to understand the potential for analytics to create scalable, tangible change. By formulating mission and vision statements, articulating our project through a TED talk and communicating complex analytics to clients through proofs of concept and deep-dive frameworks, I experienced the impact our algorithms had on students worldwide. These experiences have allowed me not only to build analytically transparent models, but to articulate insights persuasively to successfully implement strategy. It was this robust foundation at the intersection of business strategy and mission-driven enterprise which inspired me to pursue a career in strategy, innovation and impact within multinational philanthropy.
+
+Consequently, I endeavour to collaborate globally and innovatively to measurably improve lives, developing intelligent solutions to enduring humanitarian problems. I intend to achieve this by driving initiatives within the Strategy, Data and Analytics teams of established impact-first organisations such as the Bill & Melinda Gates Foundation and Chan-Zuckerberg Initiative. 
+
+Having obtained the necessary experience in international development, resource allocation and fundraising, I aspire to establish a venture philanthropy. By employing and allocating both human and financial capital to aid innovation, streamline management practices and aid sustainable growth, I intend to support the strategic objectives of social enterprise worldwide.
+

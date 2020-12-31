@@ -1,0 +1,1573 @@
+---
+date: "2017-10-31T21:28:43-05:00"
+description: "Which London Houses Promise the Highest Yield Property Portfolio?"
+draft: false
+image: pic03.jpg
+keywords: ""
+slug: buffett
+title: Buffett
+
+---
+
+# **This Place Costs That Much?**
+
+## **Applying Ensemble Methods to Predict London House Prices**
+
+---
+
+# Executive Summary
+
+The full report of this project can be viewed as a PDF [here](https://drive.google.com/file/d/1-TaxOB3piOGm94pPR-RFQz3JoF2mvcPH/view?usp=sharing "This Place Costs That Much? Applying Ensemble Methods to Predict London House Prices").
+
+# The Problem 
+ 
+London is the 8th most expensive city in the world to buy property. Yet, the emergence of new “hot spots” as the city and its transport networks expand means that its property market still promises ample investment opportunities. I seek to answer the questions “Which 200 London properties should I buy to maximize profit?”, and “How can profit opportunities be identified in neighborhoods served by Crossrail?”.
+
+Seeking to build a maximally profitable property portfolio and evaluate whether Crossrail promises further profit opportunities for nearby property-holders, I provide a comprehensive methodology for the specification, optimization, application of an ensemble model designed to predict London house prices. 
+
+# The Data
+
+Throughout these analyses, two key datasets are utilised: the first, an in-sample datasets containing 36 variables representing house price characteristics, as well as the final sale price of the property; and the second, an out-of-sample dataset containing 36 (non-identical) variables, including the property's asking price - but not its final sale price. 
+
+See [this Tableau Story](https://public.tableau.com/profile/alberto7149#!/vizhome/LondonHousePricesStorytelling/ComparingtheImpactsofthe2008FinancialCrisisandCOVID-19PandemiconLondonHousePrices "London House Prices Storytelling") for a preliminary analyis and exploration of London house prices from a comparative perspective.
+
+# The Solution
+
+Using a dataset of the actual sale prices and characteristics of 13,998 properties, I train and stack five predictive models, tuning both features and parameters to minimize Root Mean Square Error (RMSE) and build a final ensemble. 
+
+Harnessing this model, I predict prices in a new sample of 1999 houses. By comparing these predictions with corresponding asking prices, I forecast each property's profitability and construct my portfolio by selecting only the 200 most profitable properties.
+
+My final ensemble model, which consists of a stack of all models except Model 4, has a high R2 of 88.63%. Consequently, while investing in all properties would yield my average return of 0% (which is likely an artefact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since these assumptions are weak, and expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.
+
+# **Analysis in R**
+
+---
+
+## **Which London Houses Promise the Highest Yield Property Portfolio?**
+
+*Note: because of the computational intensity of some of the models, I knit my .Rmd using a pre-loaded environment, rather than re-running all models.*
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r final environment}
+
+load(here::here('data','FinalEnvironment.RData'))
+
+```
+
+```{r, load_libraries, include = FALSE}
+
+#I begin by loading in all the necessary libraries
+
+library(rpart.plot) #package to visualize trees
+library(caret) # for running decision tree models
+library(tidyverse) # the usual stuff: dplyr, readr, and other goodies
+library(lubridate) # for correctly transforming dates
+library(janitor) # clean_names(), #package to visualize results of machine learning tools
+library(Hmisc) # package for data summary using `describe`
+library(ggthemes) # package to make fancier ggplots
+library(ggplot2)  # package for plots
+library(rsample) # for splitting test and training data samples
+library(GGally) # to produce a correlation table
+library(randomForest) # to conduct random forest estimation
+library(skimr) # allows use of skim()
+library(Boruta) #for Boruta feature selection
+library(caretEnsemble) #to ensemble methods via stacking
+library(gbm) #gradient boost model library
+
+```
+
+# Loading the Data
+
+I load two sets of data: the i) training data that has the actual prices; and the ii) out of sample data that has the asking prices.  
+
+## Reading in the Data
+
+```{r load the data, message=FALSE, warning=FALSE, results='hide'}
+
+#I read in both datasets
+london_house_prices_2019_training<-read.csv(here::here('data','training_data_assignment_with_prices.csv'))
+ 
+london_house_prices_2019_out_of_sample<-read.csv(here::here('data','test_data_assignment.csv'))
+
+```
+
+## Cleaning the Data 
+
+I now clean the data by fixing data types and variable levels, imputing missingness, and dropping variables. 
+
+```{r cleaning the data, message=FALSE, warning=FALSE, results='hide'}
+
+#I fix the data types in both data sets
+
+# (1) I fix dates
+london_house_prices_2019_training <- london_house_prices_2019_training %>% mutate(date=as.Date(date))
+london_house_prices_2019_out_of_sample<-london_house_prices_2019_out_of_sample %>% mutate(date=as.Date(date))
+
+# (2) I change characters to factors
+london_house_prices_2019_training <- london_house_prices_2019_training %>% mutate_if(is.character,as.factor)
+london_house_prices_2019_out_of_sample<-london_house_prices_2019_out_of_sample %>% mutate_if(is.character,as.factor)
+
+# (3) I evaluate whether all characters have been changed successfully to factors
+str(london_house_prices_2019_training)
+str(london_house_prices_2019_out_of_sample)
+
+# (4) I make sure out of sample data and training data has the same levels for factors 
+a<-union(levels(london_house_prices_2019_training$property_type),levels(london_house_prices_2019_out_of_sample$property_type))
+london_house_prices_2019_out_of_sample$property_type <- factor(london_house_prices_2019_out_of_sample$property_type, levels = a)
+london_house_prices_2019_training$property_type <- factor(london_house_prices_2019_training$property_type, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$whether_old_or_new),levels(london_house_prices_2019_out_of_sample$whether_old_or_new))
+london_house_prices_2019_out_of_sample$whether_old_or_new <- factor(london_house_prices_2019_out_of_sample$whether_old_or_new, levels = a)
+london_house_prices_2019_training$whether_old_or_new <- factor(london_house_prices_2019_training$whether_old_or_new, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$freehold_or_leasehold),levels(london_house_prices_2019_out_of_sample$freehold_or_leasehold))
+london_house_prices_2019_out_of_sample$freehold_or_leasehold <- factor(london_house_prices_2019_out_of_sample$freehold_or_leasehold, levels = a)
+london_house_prices_2019_training$freehold_or_leasehold <- factor(london_house_prices_2019_training$freehold_or_leasehold, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$postcode_short),levels(london_house_prices_2019_out_of_sample$postcode_short))
+london_house_prices_2019_out_of_sample$postcode_short <- factor(london_house_prices_2019_out_of_sample$postcode_short, levels = a)
+london_house_prices_2019_training$postcode_short <- factor(london_house_prices_2019_training$postcode_short, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$current_energy_rating),levels(london_house_prices_2019_out_of_sample$current_energy_rating))
+london_house_prices_2019_out_of_sample$current_energy_rating <- factor(london_house_prices_2019_out_of_sample$current_energy_rating, levels = a)
+london_house_prices_2019_training$current_energy_rating <- factor(london_house_prices_2019_training$current_energy_rating, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$windows_energy_eff),levels(london_house_prices_2019_out_of_sample$windows_energy_eff))
+london_house_prices_2019_out_of_sample$windows_energy_eff <- factor(london_house_prices_2019_out_of_sample$windows_energy_eff, levels = a)
+london_house_prices_2019_training$windows_energy_eff <- factor(london_house_prices_2019_training$windows_energy_eff, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$tenure),levels(london_house_prices_2019_out_of_sample$tenure))
+london_house_prices_2019_out_of_sample$tenure <- factor(london_house_prices_2019_out_of_sample$tenure, levels = a)
+london_house_prices_2019_training$tenure <- factor(london_house_prices_2019_training$tenure, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$nearest_station),levels(london_house_prices_2019_out_of_sample$nearest_station))
+london_house_prices_2019_out_of_sample$nearest_station <- factor(london_house_prices_2019_out_of_sample$nearest_station, levels = a)
+london_house_prices_2019_training$nearest_station <- factor(london_house_prices_2019_training$nearest_station, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$water_company),levels(london_house_prices_2019_out_of_sample$water_company))
+london_house_prices_2019_out_of_sample$water_company <- factor(london_house_prices_2019_out_of_sample$water_company, levels = a)
+london_house_prices_2019_training$water_company <- factor(london_house_prices_2019_training$water_company, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$district),levels(london_house_prices_2019_out_of_sample$district))
+london_house_prices_2019_out_of_sample$district <- factor(london_house_prices_2019_out_of_sample$district, levels = a)
+london_house_prices_2019_training$district <- factor(london_house_prices_2019_training$district, levels = a)
+
+a<-union(levels(london_house_prices_2019_training$type_of_closest_station),levels(london_house_prices_2019_out_of_sample$type_of_closest_station))
+london_house_prices_2019_out_of_sample$type_of_closest_station <- factor(london_house_prices_2019_out_of_sample$type_of_closest_station, levels = a)
+london_house_prices_2019_training$type_of_closest_station <- factor(london_house_prices_2019_training$type_of_closest_station, levels = a)
+
+#(5) I take a quick look at what's in the data to ensure that steps 1-4 have each been successful...
+str(london_house_prices_2019_training)
+str(london_house_prices_2019_out_of_sample)
+
+```
+
+Now the data has been imported and transformed successfully:
+
+- dates are in date format
+- all characters are now factors
+- the out of sample (oos) data and training data have the same levels for factors
+- all variables are of the correct type (factor, numeric, integer, date)
+
+## Preparing the Data for Model Specification
+
+I now prepare the clean data to be suitable for modelling and oos prediction. 
+
+```{r preparing the data, message=FALSE, warning=FALSE, results='hide'}
+
+#I drop all columns in the out of sample data containing ONLY NA values, to get a better idea of the variables I can use to make predictions
+london_house_prices_2019_out_of_sample_clean<-london_house_prices_2019_out_of_sample[, colSums(is.na(london_house_prices_2019_out_of_sample)) != nrow(london_house_prices_2019_out_of_sample)]
+
+#I evaluate the common columns present in both the training data and oos data
+intersect(colnames(london_house_prices_2019_training),colnames(london_house_prices_2019_out_of_sample_clean))
+
+#Since there is only 4% complete rate on town, I drop this from both datasets
+london_house_prices_2019_out_of_sample_clean<-london_house_prices_2019_out_of_sample_clean %>% 
+  select(-town)
+
+london_house_prices_2019_training_clean<-london_house_prices_2019_training %>% 
+  select(-town)
+
+#I now identify the names of the 28 variables which are present in both datasets, i.e. which I can use in my models to make out-of-sample predictions
+variable_list <- as.data.frame(intersect(colnames(london_house_prices_2019_training_clean), colnames(london_house_prices_2019_out_of_sample_clean)))
+
+#Knowing which are the relevant variables, I now re-run the skim() to ensure that these variables are fully cleaned in both datasets
+skim(london_house_prices_2019_out_of_sample_clean)
+skim(london_house_prices_2019_training_clean)
+
+#The only relevant variable with missingness in both datasets is 'population' 
+
+#Though this missingness is very minor in both cases (0.5%  in sample and 0.4% out of sample), it will cause issues with LASSO and Cross-Validation, and so I impute these missing values with the median population
+
+london_house_prices_2019_out_of_sample_clean <- london_house_prices_2019_out_of_sample_clean %>% 
+  mutate(population = case_when(
+    is.na(as.numeric(population)) ~ median(as.numeric(population),na.rm=TRUE),
+    TRUE ~ as.numeric(population))) 
+
+london_house_prices_2019_training_clean <- london_house_prices_2019_training_clean %>% 
+  mutate(population = case_when(
+    is.na(as.numeric(population)) ~ median(as.numeric(population),na.rm=TRUE),
+    TRUE ~ as.numeric(population))) 
+
+#I perform a final check to ensure that this imputation has been successful, and find that it has been
+
+skim(london_house_prices_2019_out_of_sample_clean)
+skim(london_house_prices_2019_training_clean)
+
+```
+
+Now both data sets are fully prepared for accurate modelling and prediction, I proceed to split the (in-sample) training dataset into testing and training data. 
+
+## Splitting the Data into Test and Training Data
+
+```{r split the price data to training and testing, message=FALSE, warning=FALSE, results='hide'}
+
+set.seed(1234)
+
+#I perform an initial 75/25 split
+train_test_split <- initial_split(london_house_prices_2019_training_clean, prop = 0.75) #training set contains 75% of the data
+
+#I now use this split to specify the training and testing data
+train_data <- training(train_test_split)
+test_data <- testing(train_test_split)
+
+```
+
+# Visualizing the Data 
+
+I now visualise the data in order to get a better impression of the distribution of price across houses. 
+
+**Visualize and examine the data. What plots could be useful here? What do you learn from these visualizations?**
+
+I find that a Histogram, Boxplot and Scatterplot each give me a good preliminary understanding of the key drivers of house prices, and how house prices are distributed.
+
+Notably, I learn from the histogram that though the vast majority of houses are under £1 million, there are a number of notable outliers which sold for up to £9 million. Investigating this strong positive skew further via a boxplot, I find that  the greatest positive skew in prices is amongst Terraced properties, and that Detached properties command the highest median prices. Finally, I use a scatterplot to identify both the relationship between income and house prices, and also to identify how this relationship is heterogeneous across property types. Though I find that the type of property is associated with the price obtained for it, I also find that the relationship between property price and income is relatively constant (constant gradient) across all house types. 
+
+```{r visualize_boxplot, fig.height=10,fig.width=15, message=FALSE, warning=FALSE}
+
+options(scipen=1000)
+
+#(1) I investigate this skew in prices better, via a histogram
+ggplot(train_data,aes(x=price))+geom_histogram(binwidth=10000)+theme_bw()+labs(y="Count",x="Price (£)",title="There is Considerable Positive Skew in the Distribution of London House Prices", subtitle="Histogram of the Distribution of House Prices")+scale_x_continuous(breaks=seq(0,9000000,500000),limits=c(0,9000000))
+
+#(2) I produce a boxplot to evaluate the distribution of prices in the training data, by property type
+ggplot(train_data,aes(y=price, color=property_type))+geom_boxplot()+labs(y="Price (£)",title="Detached Houses have the Highest Median Price, though Terraced House Prices Demonstrate the Highest Positive Skew", subtitle="Boxplot of the Distribution of House Prices in Training Data by Property Type")+theme(axis.title = element_text())+theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())+theme_bw()
+
+#(3) I produce a scatterplot demonstrating the relationship between Annual Income and House Prices by property type
+ggplot(train_data,aes(x=average_income, y=price, color=property_type))+geom_point()+geom_smooth()+theme_bw()+labs(x="Average Annual Income (£)",y="Price (£)",title="There are Equally Strong, Positive Correlations Between House Prices and Annual Income for All Property Types, though Detached Properties Command the Highest Prices for Each Income Level", subtitle="Scatterplot of the Relationship Between House Prices and Annual Income, by Property Type")+scale_y_continuous(breaks=seq(100000,1000000,100000),limits=c(100000,1000000))+theme(legend.title=element_blank(), legend.position="top")
+
+#(4) Finally, I produce a scatterplot demonstrating the relationship between Total Floor Area and House Prices
+ggplot(train_data,aes(x=total_floor_area, y=price, color=property_type))+geom_point()+geom_smooth()+theme_bw()+labs(x="Total Floor Area (Meters Squared)",y="Price (£)",title="There Seems to be a Strong Positive Correlation Between House Prices and Total Floor Area for All Property Types", subtitle="Scatterplot of the Relationship Between House Prices and Total Floor Area, by Property Type")+scale_y_continuous(breaks=seq(100000,3000000,250000),limits=c(100000,3000000))+theme(legend.title=element_blank(), legend.position="top")
+
+```
+
+**Estimate a correlation table between prices and other continuous variables. What do you glean from the correlation table?**
+
+```{r, correlation table, warning=FALSE, message=FALSE, fig.height=7, fig.width=7, fig.align="center"}
+
+# I produce a correlation table using GGally::ggcor()
+
+london_house_prices_2019_training_clean%>% 
+  select(-ID) %>% #keep Y variable last
+  ggcorr(method = c("pairwise", "pearson"), layout.exp = 2,label_round=2, label = TRUE,label_size = 2,hjust = 1,nbreaks = 5,size = 2,angle = -20)
+
+```
+I find that there are strong **positive** correlations (>=0.60) between: 
+
+- co2_emissions_potential and co2_emissions_current (0.72)
+- co2_emissions_current and number_habitable_rooms (0.68)
+- co2_emissions_current and total_floor area (0.76)
+- number_habitable_rooms and total_floor_area (0.82)
+- price and total_floor_area (0.69)
+- co2_emissions potential and total_floor_area (0.64)
+
+I find that there are moderate **negative** correlations (<=-0.30)between:
+
+- london_zone and price (-0.31)
+- london_zone and num_tube_lines (-0.31)
+- num_rail_lines and num_tube_lines (-0.51)
+- longitude and average_income (-0.34)
+- latitude and num_rail_lines (-0.45)
+
+The majority of these relationships are self-explanatory: we expect current and potential co2 emissions to be related positively; we expect co2 emissions and house size (number of rooms, total floor area) to be related positively; and we expect price and house size to be related positively. Further, since London zones increase as distance from the city center increases, we naturally expect london zone and price to be negatively correlated, and london zone and number of tube lines to be negatively correlated. It is also intuitive that the more tube lines there are, the fewer rail lines, and vice versa. This too is a product of being closer to or further from the city center - the closer to the center, the more tube lines and the fewer rail lines. Latitutde and longitude relationships are more interesting and unexpected: average income falls as longitude increases, meaning that the more East a property, the lower the average income of its buyer, and since latitude is negatively correlated with number of rail lines, the more north a property, the fewer rail lines present. 
+
+# Training Prediction Algorithms
+
+In order to run m prediction algorithms, I take the following approach, focusing first on Features, and then on Model Tuning:
+
+**Model Features**
+
+1) Use only the 28 variables which are common across the in-sample and out-of-sample data sets
+
+2) Remove All Redundant Variables
+
+3) [IN GENERAL] Use Boruta on a "Comprehensive" predictive model employing the remaining 26 variables and select the top most important predictors from its importance ranked output to train all the models on a final equation with all theoretically sound interactions. 
+
+4) [FOR EACH MODEL] - Use Variable Importance from the caret() package: run the model once on the final equation of highly relevant/important Boruta predictors, and then again with only those predictors which have the highest importance for the specific model
+
+5) If the model trained only on its most important predictors outperforms the model run on the comprehensive final equation in terms of R2, it is selected as the final model - if this is not the case, the original comprehensive model is selected.
+
+**Model Tuning**
+
+- All tunable parameters for each model are tuned within a reasonable range, and the model is optimised on the basis of these parameters to minimise RMSE
+- If the model RMSE is minimised when any parameters are at their upper/lower limit, I increase parameter range, allowing it to be tuned optimally
+- I repeat this until all parameters are selected within the specified range of values
+
+## Setting the Control
+
+In order to stack the models correctly, I must set the same control for all models, and save my predictions. In this chunk, I set the control. 
+
+```{r setting the control, message=FALSE, warning=FALSE, results='hide'}
+
+CVfolds <- 5
+
+# Define folds
+set.seed(1234)
+
+# create five folds with no repeats
+indexPreds <- createMultiFolds(train_data$price, CVfolds, times = 1) 
+
+# Define traincontrol using folds
+control <- trainControl(method = "cv",  
+                     number = CVfolds, 
+                     returnResamp = "final", 
+                     savePredictions = "final", 
+                     index = indexPreds,
+                     verbose = TRUE)
+
+```
+
+## An Intuitively Specified Linear Regression Model
+
+```{r Example Linear Regression Model, eval=FALSE}
+
+set.seed(1234)
+
+#we are going to train the model and report the results using k-fold cross validation
+example_lm<-train(
+    price ~ distance_to_station +water_company+property_type+whether_old_or_new+freehold_or_leasehold+latitude+longitude,
+    train_data,
+   method = "lm",
+    trControl = control
+   )
+
+# summary of the results
+summary(example_lm)
+
+```
+
+### Evaluate Relative Variable Importance
+
+```{r Example Model Variable Importance, eval=FALSE}
+# we can check variable importance as well
+importance_example_lm <- varImp(example_lm, scale=TRUE)
+plot(importance_example_lm)
+
+```
+In this generic model, longitude is the most important predictor of house prices, followed by Thames water company, Terraced property type and Semidetached property type. These are not obvious predictors, but their importance makes sense: Thames water covers the core city of london, and is therefore a proxy for centrality in the city, whcih we expect to be strong associated with house prices. This is also consistent with my exploratory visualizations, where I identified the Terraced property type as strongly related to higher house prices. 
+
+### Predict the Values in Testing and Out of Sample Data
+
+Below I use the predict function to test the performance of the model in testing data and summarize the performance of the example linear regression model.
+
+```{r Example Model Predictions, message=FALSE, warning=FALSE}
+# We can predict the testing values
+
+predictions_example_lm <- predict(example_lm,test_data)
+
+example_lm_results<-data.frame(  RMSE = RMSE(predictions_example_lm, test_data$price), 
+                            R2 = R2(predictions_example_lm, test_data$price))
+
+example_lm_results                       
+
+#We can predict prices for out of sample data the same way
+example_lm_predictions_oos <- predict(example_lm,london_house_prices_2019_out_of_sample)
+
+```
+
+**How can you measure the quality of your predictions?**
+
+I measure the quality of my predictions via Root Mean Square Error and R-Square on the testing data set. The model which minimises RMSE and maximises R2 on the testing data is the highest performing model, which makes the highest quality predictions (with the least error).
+
+## Selecting Features to Run the Algorithms On
+
+### Removing Redundant Predictors
+
+For feature selection, I test 26 available and relevant predictors. Specifically, these are the 28 available variables present in both the in-sample and out-of-sample data (summarized by the data frame 'variable_list'), except:
+
+**1 variable which is not necessary**
+
+- 'ID', which is only used for identifying the house sales
+
+**1 redundant variable whose correlation with another predictor is greater than 0.70 in absolute terms**
+
+- co2_emissions_current
+
+Note that, though the variable total_floor_area is most highly correlated with other predictors, I leave it in the model because this is likely to have considerable predictive power. I am however weary of potential collinearity resulting from its inclusion. 
+
+**Below, I show the correlation table of only the variables I select for feature selection, none of which (besides total_floor_area) are highly correlated**
+ 
+```{r, correlation table of selected 26, warning=FALSE, message=FALSE, fig.height=7, fig.width=7, fig.align="center"}
+
+# I produce a correlation table using GGally::ggcor()
+
+london_house_prices_2019_training_clean %>% 
+  select(c(property_type,whether_old_or_new,freehold_or_leasehold,postcode_short,current_energy_rating,total_floor_area,number_habitable_rooms,co2_emissions_potential,energy_consumption_current,energy_consumption_potential,windows_energy_eff,tenure,latitude,longitude,population,altitude,london_zone,nearest_station,water_company,average_income,district,type_of_closest_station,num_tube_lines,num_rail_lines,num_light_rail_lines,distance_to_station)) %>% 
+  ggcorr(method = c("pairwise", "pearson"), layout.exp = 2,label_round=2, label = TRUE,label_size = 2,hjust = 1,nbreaks = 5,size = 2,angle = -20)
+
+```
+
+### Boruta Approach
+
+I now run the Boruta Feature Selection Algorithm on only these 26 variables. 
+
+**Equation with Only the 26 Predictors**
+
+```{r initial_26_predictors, message=FALSE, warning=FALSE, results='hide'}
+
+initial_26_predictors<-
+price ~ 
+property_type+
+whether_old_or_new+
+freehold_or_leasehold+
+postcode_short+
+current_energy_rating+
+total_floor_area+
+number_habitable_rooms+
+co2_emissions_potential+
+energy_consumption_current+
+energy_consumption_potential+
+windows_energy_eff+
+tenure+
+latitude+
+longitude+
+population+
+altitude+
+london_zone+
+nearest_station+
+water_company+
+average_income+
+district+
+type_of_closest_station+
+num_tube_lines+
+num_rail_lines+
+num_light_rail_lines+
+distance_to_station
+
+```
+
+**Using Boruta to Select Only The Most Important (Relevant) Predictors to Proceed with in Feature Selection**
+
+```{r Boruta to Select Important Features, fig.height=3, fig.width=5, message=FALSE, warning=FALSE, eval=FALSE}
+
+set.seed(1234)
+
+#I perform a Boruta search
+boruta_output <- Boruta(initial_26_predictors, data=train_data, doTrace=2)  
+names(boruta_output)
+
+#I obtain the significant variables including tentatively significant variables
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif) 
+
+#I perform a tentative rough fix
+roughFixMod <- TentativeRoughFix(boruta_output)
+boruta_signif <- getSelectedAttributes(roughFixMod)
+print(boruta_signif)
+
+#I obtain the variable Importance Scores
+imps <- attStats(roughFixMod)
+imps2 = imps[imps$decision != 'Rejected', c('meanImp', 'decision')]
+head(imps2[order(-imps2$meanImp), ])  # descending sort
+
+#I obtain a confirmed formula, and find (unhelpfully) that it includes all 26 predictors
+boruta_confirmed <- getConfirmedFormula(boruta_output)
+print(boruta_confirmed)
+
+#I now plot variable importance to apply my 'cliff' feature selection approach
+plot(boruta_output, cex.axis=.35, las=2, lwd=1,xlab="", main="Boruta Algorithm | Variable Importance")
+
+```
+Notably, the Boruta algorithm ratifies my inclusion of total_floor_area despite collinearity risks, since this variable is demonstrated to be the most important predictor of all. 
+
+**Boruta-Defined Subset**
+
+Though the Boruta algorithm demonstrates that all 26 features, captured by the equation 'boruta_confirmed', are relevant, in order to narrow down the number of features further, I select the following subset of the 15 most important variables from the 26 non-redundant, overlapping (between in-sample and out-of-sample datasets) variables specified above. Specifically, I identify a clear 'cliff' in importance following num_tube_lines. Therefore, I select all variables with a higher importance than type_of_closest_station.
+
+These 15 selected variables form an equation as follows:
+
+```{r boruta_15_predictors, message=FALSE, warning=FALSE, results='hide'}
+
+boruta_15_predictors <- 
+price~
+total_floor_area+
+london_zone+
+longitude+
+average_income+
+number_habitable_rooms+
+latitude+
+postcode_short+
+co2_emissions_potential+
+water_company+
+district+
+freehold_or_leasehold+
+altitude+
+property_type+
+energy_consumption_potential+
+num_tube_lines
+
+```
+
+### Final Equation
+
+I now test each Model using only the subset of important variables identified via Boruta, plus additional hypothesised interaction terms between them. I include as many interactions as possible, since I run variable importance on each model and select only those which are most important for my final model of each type. 
+
+**Boruta-Defined Subset Plus Interactions**
+
+```{r final_equation, message=FALSE, warning=FALSE, results='hide'}
+
+final_equation <- 
+price~
+total_floor_area+
+london_zone+
+longitude+
+average_income+
+number_habitable_rooms+
+latitude+
+postcode_short+
+co2_emissions_potential+
+water_company+
+district+
+freehold_or_leasehold+
+altitude+
+property_type+
+energy_consumption_potential+
+num_tube_lines+
+  
+total_floor_area*average_income+
+total_floor_area*london_zone+
+total_floor_area*property_type+
+energy_consumption_potential*co2_emissions_potential+
+district*property_type+
+district*average_income+
+property_type*freehold_or_leasehold+
+longitude*latitude+
+longitude*altitude+
+latitude*altitude+
+london_zone*number_habitable_rooms+
+london_zone*property_type+
+london_zone*average_income+
+number_habitable_rooms*average_income+
+number_habitable_rooms*co2_emissions_potential
+
+```
+
+**Model Specification Process**
+
+I decide to proceed with all variables in the final_equation specification for my subsequent models, and take the following steps in order to optimise them on the basis of selected features and optimally tune them:
+
+1. run the model on final_equation and tune its parameters
+2. identify the most important variables (using the cliff in importance as a sensible cut-off)
+3. evaluate the performance of this model run on final_equation
+4. re-run the model using only the most important variables identified and tune its parameters
+5. evaluate the performance of this model, and select it as the final specification IF it performs better than the version run on final_equation
+
+## Model 1 - LASSO Linear Regression Model
+
+I now run a comprehensive LASSO linear regression model, containing all predictors in the final_equation above. The LASSO specification is used for further feature selection. 
+
+```{r Model 1: LASSO Linear Regression, fig.height=7,fig.width=5, warning=FALSE, message=FALSE, results='hide'}
+
+set.seed(1234)
+
+#set lambda (penalty parameter) tuning
+lambda_seq <- seq(0, 10000, length = 100)
+
+model1 <- train( 
+ final_equation,
+    train_data,
+ method = "glmnet",
+ preProc = c("center", "scale"), #This option standardizes the data before running the LASSO regression
+ trControl = control,
+ 
+ # tune lambda
+ tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) #alpha=1 specifies to run a LASSO regression
+  )
+
+```
+
+```{r Model 1 Evaluation, fig.height=10, fig.width=10}
+
+# best hyperparameters (best lambda)
+model1$bestTune
+
+# check variable importance...
+model1_importance <- varImp(model1, scale=TRUE)$importance
+
+# .. and plot 50 most important variables for LASSO
+model1_importance %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  top_n(50, Overall) %>%
+  arrange(Overall) %>% 
+  mutate(rowname = forcats::fct_inorder(rowname)) %>%
+  ggplot()+
+    geom_col(aes(x = rowname, y = Overall))+
+    coord_flip()+
+    theme_bw()
+
+```
+
+### Model 1 Variable Importance
+
+```{r Model 1 Variable Importance, fig.height=10, message=FALSE, warning=FALSE}
+
+#we can check variable importance empirically as well as graphically
+model1_varImp <- varImp(model1, scale=TRUE)
+
+print(model1_varImp)
+
+```
+
+**The Most Important Predictors in the LASSO Model Form an Equation as Follows**
+
+```{r model1_cliff_important, eval=FALSE}
+
+#top 9 most important, with a minimum importance of 19%
+model1_cliff_important <- 
+price~
+total_floor_area*london_zone+
+total_floor_area+
+total_floor_area*average_income+
+london_zone+
+london_zone*number_habitable_rooms+
+number_habitable_rooms+
+district+
+district*property_type
+
+```
+
+### Model 1 Performance
+
+Predict the Values in Testing and Out of Sample Data.
+
+```{r Model 1 Predictions, message=FALSE, warning=FALSE}
+
+#We can predict the testing values
+
+predictions_model1 <- predict(model1,test_data)
+
+model1_results<-data.frame(RMSE = RMSE(predictions_model1, test_data$price), 
+                            R2 = R2(predictions_model1, test_data$price))
+
+model1_results                       
+
+#We can predict prices for out of sample data the same way
+model1_predictions_oos <- predict(model1,london_house_prices_2019_out_of_sample)
+
+```
+
+### Re-Running Model 1 with Only the Most Important Predictors and Evaluating its Performance
+
+```{r Model 1 cliff Important, fig.height=7,fig.width=5, eval=FALSE}
+
+set.seed(1234)
+
+#options to tune lambda (penalty parameter)
+lambda_seq <- seq(0, 10000, length = 100)
+
+model1_cliff <- train( #population+
+ model1_cliff_important,
+    train_data,
+ method = "glmnet",
+ preProc = c("center", "scale"), #This option standardizes the data before running the LASSO regression
+ trControl = control,
+ 
+ #tune lambda
+ tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) #alpha=1 specifies to run a LASSO regression
+  )
+
+# best hyperparameters (best lambda)
+model1_cliff$bestTune
+
+#coefficients for best lambda
+coef(model1_cliff$finalModel, model1_cliff$bestTune$lambda)
+
+```
+
+```{r Model 1: cliff Important Predictions, eval=FALSE}
+
+#we can predict the testing values
+predictions_model1_cliff <- predict(model1_cliff,test_data)
+
+model1_cliff_results<-data.frame(RMSE = RMSE(predictions_model1_cliff, test_data$price), 
+                            R2 = R2(predictions_model1_cliff, test_data$price))
+
+model1_cliff_results                       
+
+#we can predict prices for out of sample data the same way
+model1_predictions_oos <- predict(model1_cliff,london_house_prices_2019_out_of_sample)
+
+```
+
+### Final Model 1
+
+**Model 1 Report**
+
+As would be expected (given that LASSO penalises low-importance variables), running LASSO with only the top 8 predictors has little effect on its R2 result - worsening predictive power very slightly. Since LASSO is itself a feature selection approach, the features of the final model are specified by the final_equation, including 15 Boruta-defined variables, plus interactions. The tuning parameters are as follows: Alpha = 1 (LASSO Regression), Lambda = 202.0202. I find that Model 1 has an R2 of 84.50% and RMSE of 230754, meaning that it substantially outperforms the generically specified linear regression model, which had an R2 of 17.17%. 
+
+```{r Model 1 Final}
+
+model1_final <- model1
+
+```
+
+Thus, 
+
+```{r Model 1 Final Predictions}
+
+#we can predict the testing values
+
+predictions_model1_final <- predict(model1_final,test_data)
+
+model1_final_results <-data.frame(RMSE = RMSE(predictions_model1_final, test_data$price), 
+                            R2 = R2(predictions_model1_final, test_data$price))
+
+model1_final_results                      
+
+#we can predict prices for out of sample data the same way
+model1_final_predictions_oos <- predict(model1_final,london_house_prices_2019_out_of_sample)
+
+```
+
+## Model 2 - Decision Tree
+
+Next I fit a tree model using the same subset of features, and tuning the value of the complexity parameter, cp.
+
+```{r Model 2: Tree Model, eval=FALSE}
+
+set.seed(1234)
+
+#I choose a range of cp values broad enough to allow the algorithm to tune optimally to minimise RMSE
+cp_grid <- expand.grid(cp = seq( 0.0000, 0.0030,0.00001))
+
+model2 <- train(final_equation, 
+                   data = train_data, 
+                   method = "rpart",
+                   metric="RMSE",
+                   trControl=control,
+                   tuneGrid=cp_grid) 
+
+#plot the best tree model found
+rpart.plot(model2$finalModel)
+
+
+print(model2)
+
+```
+
+```{r Model 2 Parameter}
+
+#print the search results of 'train' function
+plot(model2)
+
+```
+
+I find that the optimal complexity parameter (cp) value is 0.00008. I now examine the predictive performance of the best tree in the test data.
+
+### Model 2 Variable Importance
+
+```{r Model 2 Variable Importance, fig.height=5, message=FALSE, warning=FALSE}
+
+#we can check variable importance as well
+model2_importance <- varImp(model2, scale=TRUE)
+print(model2_importance)
+
+```
+
+```{r model2_cliff_important,eval=FALSE}
+
+#top 13 most important, with a minimum importance of 36%
+model2_cliff_important<-
+  price~
+  total_floor_area*average_income+
+  longitude+
+  latitude+
+  longitude*latitude+
+  london_zone*average_income+
+  longitude*altitude+
+  total_floor_area+
+  average_income*number_habitable_rooms+
+  total_floor_area*london_zone+
+  latitude*altitude+
+  altitude+
+  london_zone+
+  number_habitable_rooms*co2_emissions_potential
+  
+```
+
+### Model 2 Performance
+
+```{r Model 2 Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model2 <- predict(model2,test_data)
+
+model2_results<-data.frame(RMSE = RMSE(predictions_model2, test_data$price), 
+                            R2 = R2(predictions_model2, test_data$price))
+
+model2_results                       
+
+#We can predict prices for out of sample data the same way
+model2_predictions_oos <- predict(model2,london_house_prices_2019_out_of_sample)
+
+```
+
+### Re-Running Model 2 with Only the Most Important Predictors and Evaluating its Performance
+
+```{r Model 2: cliff Important,eval=FALSE}
+
+set.seed(1234)
+
+#I choose cp values that seems to result in low error based on plot above
+cp_grid <- expand.grid(cp = seq( 0.0000, 0.0030,0.00001))
+
+model2_cliff <- train(model2_cliff_important, 
+                   data = train_data, 
+                   method = "rpart",
+                   metric="RMSE",
+                   trControl=control,
+                   tuneGrid=cp_grid) 
+
+# Plot the best tree model found
+rpart.plot(model2_cliff$finalModel)
+
+# Print the search results of 'train' function
+plot(model2_cliff) 
+
+print(model2_cliff)
+
+```
+
+```{r Model 2: cliff Important Predictions,eval=FALSE}
+
+#we can predict the testing values
+predictions_model2_cliff <- predict(model2_cliff,test_data)
+
+model2_cliff_results<-data.frame(RMSE = RMSE(predictions_model2_cliff, test_data$price), 
+                            R2 = R2(predictions_model2_cliff, test_data$price))
+
+model2_cliff_results                       
+
+#we can predict prices for out of sample data the same way
+model2_predictions_oos <- predict(model2_cliff,london_house_prices_2019_out_of_sample)
+
+```
+
+### Final Model 2
+
+**Model 2 Report**
+
+Since this tree, trained on only the most important features (as determined by the cliff in the ranking of relative predictor importance), has a lower R2 than the model including all predictors in the final_equation, I choose the former model, with cp = 0.00008, and R2 of 79.46%, as my final tree model. 
+
+```{r Model 2 Final}
+
+model2_final <- model2
+
+```
+
+Thus, 
+
+```{r Model 2 Final Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model2_final <- predict(model2_final,test_data)
+
+model2_final_results <-data.frame(RMSE = RMSE(predictions_model2_final, test_data$price), 
+                            R2 = R2(predictions_model2_final, test_data$price))
+
+model2_final_results                      
+
+#We can predict prices for out of sample data the same way
+model2_final_predictions_oos <- predict(model2_final,london_house_prices_2019_out_of_sample)
+
+```
+
+## Model 3 - K Nearest Neighbours (k-NN)
+
+```{r Model 3: k-NN, eval=FALSE}
+
+set.seed(1234)
+
+#I set the tuning range for number of nearest neighbiurs large enough to allow RMSE optimisation/minimisation
+knnGrid <-  expand.grid(k= seq(1,11, by = 2)) 
+
+model3 <- train(final_equation, data=train_data,
+                 preProcess = c("center", "scale"), 
+                 method="knn", 
+                 metric="RMSE", 
+                 trControl=control,
+                 tuneGrid = knnGrid)
+
+# display results
+print(model3)
+
+```
+```{r Model 3 Parameter Evaluation}
+
+# plot results
+plot(model3)
+
+```
+
+
+### Model 3 Variable Importance
+
+```{r Model 3 Variable Importance, fig.height=5, message=FALSE, warning=FALSE}
+
+# we can check variable importance as well
+model3_importance <- varImp(model3, scale=TRUE)
+print(model3_importance)
+
+```
+
+```{r model3_cliff_important,eval=FALSE}
+
+#top 6 most important, with a minimum importance of 21%
+model3_cliff_important<-
+  price~
+  total_floor_area+
+  co2_emissions_potential+
+  number_habitable_rooms+
+  average_income+
+  london_zone+
+  longitude
+
+```
+
+### Model 3 Performance
+
+```{r Model 3 Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model3 <- predict(model3,test_data)
+
+model3_results<-data.frame(RMSE = RMSE(predictions_model3, test_data$price), 
+                            R2 = R2(predictions_model3, test_data$price))
+
+model3_results                       
+
+#We can predict prices for out of sample data the same way
+model3_predictions_oos <- predict(model3,london_house_prices_2019_out_of_sample)
+
+```
+
+### Re-Running Model 3 with Only the Most Important Predictors and Evaluating its Performance
+
+```{r Model 3: cliff Important,eval=FALSE}
+
+set.seed(1234)
+
+knnGrid <-  expand.grid(k= seq(1,11, by = 2)) 
+
+model3_cliff <- train(model3_cliff_important, data=train_data,
+                 preProcess = c("center", "scale"), 
+                 method="knn", 
+                 metric="RMSE", 
+                 trControl=control,
+                 tuneGrid = knnGrid)
+
+# display results
+print(model3_cliff)
+
+# plot results
+plot(model3_cliff)
+
+```
+
+```{r Model 3: cliff Important Predictions,eval=FALSE}
+
+# We can predict the testing values
+
+predictions_model3_cliff <- predict(model3_cliff,test_data)
+
+model3_cliff_results<-data.frame(RMSE = RMSE(predictions_model3_cliff, test_data$price), 
+                            R2 = R2(predictions_model3_cliff, test_data$price))
+
+model3_cliff_results                       
+
+#We can predict prices for out of sample data the same way
+model3_predictions_oos <- predict(model3_cliff,london_house_prices_2019_out_of_sample)
+
+```
+
+### Final Model 3
+
+**Model 3 Report**
+
+Since the R2 of the model run only on the most important variables (as determined by an cliff method) is lower than that of the model trained on the final_equation, I proceed with the complete model as my final model 3. Specifically, this model is optimised (RMSE is minimimsed) when k=3, and the resulting R2 is 73.85%. 
+
+```{r Model 3 Final}
+
+model3_final <- model3
+
+```
+
+Thus, 
+
+```{r Model 3 Final Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model3_final <- predict(model3_final,test_data)
+
+model3_final_results <-data.frame(RMSE = RMSE(predictions_model3_final, test_data$price), 
+                            R2 = R2(predictions_model3_final, test_data$price))
+
+model3_final_results                      
+
+#We can predict prices for out of sample data the same way
+model3_final_predictions_oos <- predict(model3_final,london_house_prices_2019_out_of_sample)
+
+```
+
+## Model 4 - Random Forest
+
+ Parameters for random forest models in the ranger function that implements random forest
+ 
+ i) TUNED 1 | 'mtry': number of randomly chosen variables to do a split each time 
+ ii) TUNED 2 | min.node.size: Minimum size allowed for a leaf (default is 5 for regression)
+ 
+ iii) splitrule: purity measure we use. I will only use "variance", the default for regression
+ iv) 'importance': is an option to get a sense of the importance of the variables. I use it below.
+
+```{r Model 4: Random Forest,eval=FALSE}
+
+set.seed(1234)
+
+#I define the tuning grid: tuneGrid with a sufficiently large range for optimisation.minimisation of RMSE
+gridRF <- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = "variance",
+  .min.node.size = seq(5,50,by=5)
+)
+
+#fit random forest: model=ranger using caret library and the train function
+model4 <- train(
+  final_equation, data=train_data,
+  method = "ranger",
+  metric="RMSE",
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = 'permutation' 
+  #This is the method used to determine variable importance
+  #Permutation=leave one variable out and fit the model again
+)
+
+# display results
+print(model4)
+
+```
+```{r Model 4 Plot}
+
+# plot results
+plot(model4)
+
+```
+
+### Model 4 Variable Importance
+
+```{r Model 4 Variable Importance, fig.height=5, message=FALSE, warning=FALSE}
+
+# we can check variable importance as well
+model4_importance <- varImp(model4, scale=TRUE)
+print(model4_importance)
+
+```
+
+```{r model4_cliff_important, eval=FALSE}
+
+#top 9 most important, with a minimum importance of 36%
+model4_cliff_important<-
+  price~
+  total_floor_area*average_income+
+  total_floor_area+
+  total_floor_area*london_zone+
+  london_zone+
+  london_zone*average_income+
+  london_zone*number_habitable_rooms+
+  number_habitable_rooms+
+  average_income*number_habitable_rooms+
+  number_habitable_rooms*co2_emissions_potential
+
+```
+
+### Model 4 Performance
+
+Let's examine the predictive performance of the best RF model.
+
+```{r Model 4 Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model4 <- predict(model4,test_data)
+
+model4_results<-data.frame(RMSE = RMSE(predictions_model4, test_data$price), 
+                            R2 = R2(predictions_model4, test_data$price))
+
+model4_results                       
+
+#We can predict prices for out of sample data the same way
+model4_predictions_oos <- predict(model4,london_house_prices_2019_out_of_sample)
+
+```
+
+### Re-Running Model 4 with Only the Most Important Predictors and Evaluating its Performance
+
+```{r Model 4: cliff Important,eval=FALSE}
+
+set.seed(1234)
+
+gridRF <- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = "variance",
+  .min.node.size = seq(5,50,by=5)
+)
+
+model4_cliff <- train(
+  model4_cliff_important, data=train_data,
+  method = "ranger",
+  metric="RMSE",
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = 'permutation' 
+
+)
+
+# display results
+print(model4_cliff)
+
+# plot results
+plot(model4_cliff)
+
+```
+
+```{r Model 4: cliff Important Predictions,eval=FALSE}
+
+# We can predict the testing values
+
+predictions_model4_cliff <- predict(model4_cliff,test_data)
+
+model4_cliff_results<-data.frame(RMSE = RMSE(predictions_model4_cliff, test_data$price), 
+                            R2 = R2(predictions_model4_cliff, test_data$price))
+
+model4_cliff_results                       
+
+#We can predict prices for out of sample data the same way
+model4_predictions_oos <- predict(model4_cliff,london_house_prices_2019_out_of_sample)
+
+```
+
+Since the R2 of the model run only on all the final_equation variables is marginally higher than that of the model trained on the smaller subset of important variables, I proceed with the full model as my final model 4. However, as a final tuning step for Model 4, I also tune the optimal number of trees using the function below.
+
+### Tuning the Optimal Number of Trees for Model 4
+```{r Model 4 Tuned Trees,eval=FALSE}
+
+set.seed(1234)
+
+tunetrees_RMSEmin <- function(number_trees,k){
+  
+  #I build an empty vector 'result' to be filled with the results
+  result = c()
+  
+  #I loop over the number of trees in this vector
+  for (number in number_trees) {
+  
+#I run the randomforest with the same tuning parameters as before
+gridRF <- data.frame(
+  .mtry = seq(5,50,by=5),
+  .min.node.size = seq(5,50,by=5),
+  .splitrule = "variance"
+)
+
+model4_tunetrees <- train(
+  final_equation, data=train_data,
+  method = "ranger",
+  metric="RMSE",
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = 'permutation',
+  num.trees=number
+
+)
+    
+    result = c(result,mean(model4_tunetrees$resample$RMSE))
+  }
+  
+  optimal = which(result==min(result))
+  paste(number_trees[optimal],'is the optimal number of trees')
+  
+}
+
+#I create a vector of values of number of trees to test in the forest and set k for cross-validation
+number_trees=c(50,100,250,500)
+k=5
+
+#I run the function to find the optimal tuning parameters for the model
+tunetrees_RMSEmin(number_trees,k)
+
+#I print the result
+print(model4_tunetrees)
+
+```
+
+This function tells me that 500 is the optimal number of trees (and that mtry=30 and min.node.size=30), of those specified, to minimize RMSE. Thus, my final Model 4 is specified with 500 trees.
+
+```{r Model 4 Tuned Trees - Running the Final Model, eval=FALSE}
+
+set.seed(1234)
+
+#I define the tuning grid: tuneGrid with a sufficiently large range for optimisation.minimisation of RMSE
+gridRF <- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = "variance",
+  .min.node.size = seq(5,50,by=5)
+)
+
+#fit random forest: model=ranger using caret library and the train function
+model4_tunetrees <- train(
+  final_equation, data=train_data,
+  method = "ranger",
+  metric="RMSE",
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = 'permutation',
+  num.trees=500
+  #This is the method used to determine variable importance
+  #Permutation=leave one variable out and fit the model again
+)
+
+# display results
+print(model4_tunetrees)
+
+# plot results
+plot(model4_tunetrees)
+
+```
+
+### Model 4 Variable Importance and Performance (with Tuned Trees)
+
+```{r Model 4 Variable Importance with Tuned Trees, fig.height=5, message=FALSE, warning=FALSE}
+
+# we can check variable importance as well
+model4_tunetrees_importance <- varImp(model4_tunetrees, scale=TRUE)
+print(model4_tunetrees_importance)
+
+```
+
+```{r Model 4 Predictions with Tuned Trees}
+
+# We can predict the testing values
+
+predictions_model4_tunetrees <- predict(model4_tunetrees,test_data)
+
+model4_tunetrees_results<-data.frame(RMSE = RMSE(predictions_model4_tunetrees, test_data$price), 
+                            R2 = R2(predictions_model4_tunetrees, test_data$price))
+
+model4_tunetrees_results                       
+
+#We can predict prices for out of sample data the same way
+model4_tunetrees_predictions_oos <- predict(model4_tunetrees,london_house_prices_2019_out_of_sample)
+
+```
+
+### Final Model 4
+
+Despite performing the same as the random forest model without tuned trees, I select the model for which trees have been tuned as the final, optimal, model 4, since this is both certain to minimise R2 within the limits of all possible tunable parameters, and to ensure my methodology is versatile - as the tuned and un-tuned models are unlikely to perform comparably on other datasets or random seeds. 
+
+**Model 4 Report**
+
+Thus, my final model 4 is tuned with parameters mtry=30, splitrule=variance and min.node.size=30, with num.trees=500. This results in an R2 of 81.65%.
+
+```{r Model 4 Final}
+
+model4_final <- model4_tunetrees
+
+```
+
+Thus, 
+
+```{r Model 4 Final Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model4_final <- predict(model4_final,test_data)
+
+model4_final_results <-data.frame(RMSE = RMSE(predictions_model4_final, test_data$price), 
+                            R2 = R2(predictions_model4_final, test_data$price))
+
+model4_final_results                      
+
+#We can predict prices for out of sample data the same way
+model4_final_predictions_oos <- predict(model4_final,london_house_prices_2019_out_of_sample)
+
+```
+
+## Model 5 - Gradient Boosting Machine (GBM)
+
+Now I demonstrate the use of GBM. The syntax is very similar to that of AdaBoost, but unlike AdaBoost can be run on regression as well as classification models. The GBM function has the following parameters: 
+
+i) n.trees: number of iterations, i.e. trees.
+ii) interaction.depth: complexity of the tree. 
+iii) shrinkage: learning rate, how quickly the algorithm adapts.
+iv) n.minobsinnode: the minimum number of training set samples in a node to stop splitting.
+
+### Generic GBM
+
+I first try a generic GBM using the parameters provided in the workshop. 
+
+```{r Model 5 - Gradient Boosting Machine, eval=FALSE}
+
+set.seed(1234)
+
+#I ensure the grid is sufficiently broad for the optimal, RMSE-minimising parameters to be selected
+grid<-expand.grid(interaction.depth = 6,n.trees = 100,shrinkage =0.075, n.minobsinnode = 10)
+
+model5_generic <- train(final_equation, data=train_data,
+                 method = "gbm", 
+                 trControl = control,
+                 tuneGrid =grid,
+                   metric = "RMSE",
+                 verbose = FALSE
+                 )
+
+print(model5_generic)
+
+predictions_model5_generic <- predict(model5_generic,test_data)
+
+model5_generic_results<-data.frame(RMSE = RMSE(predictions_model5_generic, test_data$price), 
+                            R2 = R2(predictions_model5_generic, test_data$price))
+
+model5_generic_results                       
+
+model5_generic_predictions_oos <- predict(model5_generic,london_house_prices_2019_out_of_sample)
+
+```
+
+Though I obtain the highest R2 yet, of 84.8%, I now tune the 4 parameters in order to obtain a better predictive model. This process is highly computer-intensive, and takes about 10 hours to run on a standard laptop computer. 
+
+### Optimally Tuned GBM
+
+```{r Model 5 - Tuned Gradient Boosting Machine (GBM), eval=FALSE}
+
+set.seed(1234)
+
+#I ensure the grid is sufficiently broad for the optimal, RMSE-minimising parameters to be selected
+grid<-expand.grid(n.trees = 250, interaction.depth = seq(3,15,by=3), shrinkage =seq(0.025,0.1,by=0.025), n.minobsinnode = seq(5,15,by=5))
+
+model5 <- train(final_equation, data=train_data,
+                 method = "gbm", 
+                 trControl = control,
+                 tuneGrid =grid,
+                   metric = "RMSE",
+                 verbose = FALSE
+                 )
+
+print(model5)
+
+```
+
+### Model 5 Variable Importance
+
+```{r Model 5 Variable Importance, fig.height=5, message=FALSE, warning=FALSE}
+
+#Evaluating the importance of variables in model 5, which requires the "gbm" library
+varImp(model5)
+
+```
+
+### Model 5 Performance
+
+```{r Model 5 Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model5 <- predict(model5,test_data)
+
+model5_results<-data.frame(RMSE = RMSE(predictions_model5, test_data$price), 
+                            R2 = R2(predictions_model5, test_data$price))
+
+model5_results                       
+
+#We can predict prices for out of sample data the same way
+model5_predictions_oos <- predict(model5,london_house_prices_2019_out_of_sample)
+
+```
+
+Since the performance of Model 5 is already considerable and this is a highly time and computer intensive algorithm, I do not re-run the GBM algorithm on a subset of important features. Further, this decision is ratified by the fact that, in the cases of Models 1-4, re-running on selected important features resulted in a universal worsening of model performance (as evaluated by R2), implying that running the model on a subset is unlikely to substantively improve performance. 
+
+### Final Model 5
+
+**Model 5 Report**
+
+Instead, optimally tuned with the parameters: n.trees = 250; interaction.depth = 15; shrinkage = 0.05; n.minobsinnode = 5 and with a final R2 of 87.9%, I proceed with stacking these 5 models into a single ensemble model. 
+
+```{r Model 5 Final}
+
+model5_final <- model5
+
+```
+
+Thus, 
+
+```{r Model 5 Final Predictions, message=FALSE, warning=FALSE}
+
+# We can predict the testing values
+
+predictions_model5_final <- predict(model5_final,test_data)
+
+model5_final_results <-data.frame(RMSE = RMSE(predictions_model5_final, test_data$price), 
+                            R2 = R2(predictions_model5_final, test_data$price))
+
+model5_final_results                      
+
+#We can predict prices for out of sample data the same way
+model5_final_predictions_oos <- predict(model5_final,london_house_prices_2019_out_of_sample)
+
+```
+
+# Stacking to Create a Final Ensemble Model
+
+```{r combine results, message=FALSE, warning=FALSE, results='hide'}
+
+#I now combine the results of all 5 of these models
+multimodel <- list(glmnet=model1_final, rpart=model2_final, knn=model3_final, ranger=model4_final, gbm=model5_final)
+class(multimodel) <- "caretList"
+
+```
+
+```{r visualize results, message=FALSE, warning=FALSE, results='hide'}
+
+#I visualize the differences in performance of each algorithm for each fold, in terms of the key R2 metric
+  modelCor(resamples(multimodel))
+  dotplot(resamples(multimodel), metric = "Rsquared")
+   xyplot(resamples(multimodel), metric = "Rsquared")
+    splom(resamples(multimodel), metric = "Rsquared")
+  
+```
+
+```{r stacking, results='hide', warning=FALSE, message=FALSE}
+
+#we can now use stacking with the list of models
+
+final_ensemble_model <- caretStack(multimodel,
+    trControl=control,method="glmnet",
+    metric = "RMSE")
+
+```
+
+```{r stacking evaluation}
+
+ summary(final_ensemble_model)
+  
+  predictions_ensemble <- predict(final_ensemble_model,test_data)
+
+ensemble_results <-data.frame(RMSE = RMSE(predictions_ensemble, test_data$price), 
+                            R2 = R2(predictions_ensemble, test_data$price))
+
+#I review the overall R2 performance and lambda value of my final stacked ensemble model
+ensemble_results
+
+final_ensemble_model$ens_model$bestTune
+
+```
+
+```{r evaluating_model_importance}
+
+#Since the model uses a LASSO formulation, I can also identify the relative importance of each constituent model for my final predictions
+coef(final_ensemble_model$ens_model$finalModel, final_ensemble_model$ens_model$bestTune$lambda)
+
+```
+
+# Picking a Portfolio of 200 Investments
+
+I now use this final ensemble model to pick the 200 best investments (on the basis of forecast profitability) from the out-of-sample data
+
+```{r,warning=FALSE,  message=FALSE }
+
+numchoose=200
+
+oos<-london_house_prices_2019_out_of_sample
+
+#predict the value of houses
+oos$predict <- predict(final_ensemble_model,oos)
+
+#I first rank the properties in descending order of forecast profit margin
+oos_200 <- oos %>% 
+  mutate(profitMargin_forecast=(predict-asking_price)/asking_price) %>% 
+  arrange(-profitMargin_forecast)
+
+#I then create a new column which codes them as 1 in a column called 'buy' if I wish to buy them, 
+#and 0 if I do not, based on the criteria of selecting only the properties with the top 200 forecast profit margins
+oos_200$buy=0
+oos_200[1:numchoose,]$buy=1
+
+#I now drop the predict and profitMargin_forecast columns, leaving only 
+#the original OOS columns and the 'buy' variable
+oos_final <- oos_200 %>% 
+  select(-predict,-profitMargin_forecast)
+
+#I output my choices in a .csv
+write.csv(oos_final,"Lambert_Alberto.csv")
+
+#this .csv now contains the original 37 columns of the out of sample data, 
+#plus a final 'buy' column marking the 200 properties with the highest forecast profit margin
+
+```
+
+# Estimating Portfolio Returns
+
+I now take the in-sample testing data (whose prices we know) and generate a random asking price in order to evaluate how much money my final algorithm (final ensemble model) can make. For the sake of simplicity I assume that asking price is within 20% of the actual price. Then I will run my algorithm to see how it does on this data.
+
+```{r,warning=FALSE,  message=FALSE }
+
+numchoose=200
+
+set.seed(1234)
+
+random_mult<-1/(1+runif(nrow(test_data), min = -0.2, max = 0.2))
+test_data$asking_price<- test_data$price*random_mult
+
+
+#I predict the value of houses using my algorithm
+test_data$predict <- predict(final_ensemble_model,test_data)
+
+#I find the profit margin given our predicted price and asking price
+test_data<- test_data%>%mutate(profitMargin=(predict-asking_price)/asking_price)%>%arrange(-profitMargin)
+
+#I choose only the top 200 of them to invest in (i.e. the 200 with the highest profit margin)
+test_data$invest=0
+test_data[1:numchoose,]$invest=1
+
+#I now find the actual profit on the basis of the synthetic asking price
+test_data<-test_data%>%mutate(profit=(price-asking_price)/asking_price)%>%mutate(actualProfit=invest*profit)
+
+#if we invest in everything, the percentage profit is -0.04%
+mean(test_data$profit)*100
+
+#if we just invest in the 200 we choose, the profit is approximately 7.50%
+sum(test_data$actualProfit)*100/numchoose
+
+#However, note that these profit forecasts are highly sensitive to the random seed set, since the asking prices are synthetic and not actual
+
+```
+
+Consequently, while investing in all properties would yield my average return of 0% (which is likely an artefact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since these assumptions are weak, and expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.

@@ -1,0 +1,227 @@
+# Site settings
+baseURL = "https://alberto-lambert.netlify.app/"
+languageCode = "en-us"
+title = "Alberto Lambert"
+theme = "forty"
+
+# Enter your tracking code to enable Google Analytics
+googleAnalytics = ""
+
+# Enter your disqus shortname to enable comments
+disqusShortname = ""
+
+[params]
+  # You can use Markdown syntax for urls [text](//url.to/source)
+  # To create multi-line text in strings use the """example Text""" format
+  #
+  # All icons using Fontawesome's icon font. Look at fontawesome.io/icons
+  # for more icons. The icons are represented by their corresponding
+  # CSS class.
+
+  # Provide your metadata here.
+  name = "Alberto Lambert"
+  description = "Personal Portfolio Website"
+
+  # Link custom assets relative to /static
+  custom_css = []
+  custom_js  = []
+  favicon    = "favicon.ico"
+
+  # Just a custom image variable, please define it in .md files for content.
+  image = ""
+
+  # 404 error customization
+  [params.error404]
+    heading = "Page couldn't be found"
+    text = "Please visit [this page](/)"
+
+  # Navigation Section
+  [params.navigation]
+    title = "Alberto Lambert"
+    subtitle = "Portfolio"
+    menu = "Menu"
+    # logo = "logo.png"
+
+    #[[params.navigation.links]]
+    #  name = "DEMO"
+     # url = "elements.html"
+      
+    [[params.navigation.links]]
+      name = "Home"
+      url = "#"
+      
+    [[params.navigation.links]]
+      name = "Life"
+      url = "post/brunello"
+
+    [[params.navigation.links]]
+      name = "Work"
+      url = "post/khayyam"
+
+  # [[params.navigation.button2]]
+  #   name = "Projects"
+   #  url = "blogs"
+
+    #Button Style 1
+    #[[params.navigation.button1]]
+    #name = "My Projects"
+     #url = "blogs"
+
+    #Button Style 2
+    #[[params.navigation.button2]]
+    # name = "Projects"
+     #url = "blogs"
+
+  # Banner section
+  [params.banner]
+    # To change the background image on the homepage banner, replace 'banner.jpg' in
+    # the 'static/img' folder.
+    title = "Mission"
+    subtitle = "Analysing, deconstructing and solving global issues to aid efficiency, advancement and prosperity."
+    buttonText = "Projects"
+    image = "banner.jpg" 
+     
+  # Tiles Section
+  [params.tiles]
+    enable = true
+    # Display your showcases here.
+    
+      [[params.tiles.showcase]]  
+      title = "Work"
+      subtitle = "Khayyam"
+      image = "pic01.jpg"
+      url = "post/khayyam" 
+      
+      [[params.tiles.showcase]] 
+      title = "Life"
+      subtitle = "Brunello"
+      image = "pic02.jpg"   
+      url = "post/brunello" 
+      
+    [[params.tiles.showcase]]   
+     title = "Finance" 
+     subtitle = "Buffett" 
+     image = "pic03.jpg" 
+     url = "blogs/buffett"
+
+      [[params.tiles.showcase]]
+      title = "Entertainment"
+      subtitle = "Scorsese"
+      image = "pic04.jpg"
+      url = "blogs/scorsese"
+      
+      [[params.tiles.showcase]]
+      title = "Public Health"
+      subtitle = "Nightingale"
+      image = "pic05.jpg"
+      url = "blogs/nightingale"
+      
+      [[params.tiles.showcase]] 
+      title = "Travel" 
+      subtitle = "Hillary"
+      image = "pic06.jpg"
+      url = "blogs/hillary"
+      
+    #  [[params.tiles.showcase]]
+    #  title = "Lincoln"
+    #  subtitle = "Government"
+    #  image = "pic04.jpg"
+    #  url = "blogs/lincoln"
+
+    #[[params.tiles.showcase]]
+     # title = "Rockefeller"
+     # subtitle = "Infrastructure"
+     # image = "pic03.jpg"
+     # url = "blogs/rockefeller"
+  
+ #  [[params.tiles.showcase]]
+ #     title = "Odum"
+ #     subtitle = "Ecology"
+ #     image = "pic06.jpg"
+ #     url = "blogs/Odum"
+
+  #[[params.tiles.showcase]]
+     #title = "Bloom"
+    # subtitle = "Education"
+    # image = "pic01.jpg"
+    # url = "blogs/bloom"
+      
+    # You can make more showcases by copy and pasting the code above
+
+  # [params.blog]
+
+    # All blogs defined in their own files. You can find example blogs
+    # at 'exampleSite/content/blogs'. Copy the 'blogs' folder into the 'content' directory
+    # at the root of this Hugo site.
+    # For more informtion take a look at the README.
+    # To add more blogs just copy and paste the code.
+
+  # Section Type Two
+  [params.two]
+    enable = true
+    title = "A Confluence" 
+    subtitle = "I pursue order in an increasingly disordered world. An avid problem solver from a young age, I have always strived to uncover hidden meanings behind everyday interactions and believe that failure is the most critical component of any success. However, until recently I lacked a firm foundation of knowledge from which to identify, analyse and ultimately solve meaningful problems. University College London provided me with the tools and frameworks with which to understand the world around me, from impact evaluation, econometrics and microfinance to election forecasting and public policy implementation. Equity research at Goldman Sachs and Odey Asset Management nurtured my curiosity for markets and the factors which shape them. Strategic projects at Sana Labs, an AI company pioneering personalised education, have empowered me to successfully devise, articulate and execute product strategies. My time at London Business School, undertaking a rigorous applied quantitative analytics M.Sc. programme, represents the confluence of these distinct streams and an incubator for the creation and deployment of world-changing products."
+    buttonText = "Work"
+    url = "post/khayyam"
+
+  # Contact section
+ # [params.contact]
+ #   enable = true
+ #   buttonSend = "Send message"
+ #   buttonClear = "Clear"
+
+    # Since this template is static, the contact form uses www.formspree.io as a
+    # proxy. The form makes a POST request to their servers to send the actual
+    # email. Visitors can send up to a 1000 emails each month for free.
+    #
+    # What you need to do for the setup?
+    #
+    # - set your email address under 'email' below and uncomment
+    # - upload the generated site to your server
+    # - send a dummy email yourself to confirm your account
+    # - click the confirm link in the email from www.formspree.io
+    # - you're done. Happy mailing!
+    # formEmail = "example@domain.com"
+
+    # Contact Section
+    # You can add multiple emails, phone numbers, or addresses
+    # by copying the corresponding map with frontmatter code.
+    [[params.contact.email]]
+    title = "Email"
+    email = "alambert.mam2021@london.edu"
+
+    [[params.contact.phone]]
+    title = "Phone"
+    phone = "+44 (0) 7717 796 223"
+
+    [[params.contact.address]]
+    title = "Address"
+    street = "London Business School, Regent's Park"
+    city = "London NW1 4SA"
+    country = "United Kingdom"
+
+  # Footer section
+  [params.footer]
+    enable = true
+    copyright = "Alberto Lambert 2021"
+
+    # Uses font awesome icons
+    [[params.footer.social]]
+      icon = "fa-twitter"
+      url= "https://twitter.com/_AlbertoLambert"
+      label = "Twitter"
+
+    [[params.footer.social]]
+      icon = "fa-instagram"
+      url= "https://www.instagram.com/eggy_crumpet/?hl=en"
+      label = "Instagram"
+    
+    [[params.footer.social]]
+      icon = "fa-github"
+      url= "https://github.com/alambert-ux"
+      label = "GitHub"
+
+    [[params.footer.social]]
+      icon = "fa-linkedin"
+      url= "https://www.linkedin.com/in/albertolambert/"
+      label = "LinkedIn"

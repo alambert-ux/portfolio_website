@@ -1,0 +1,124 @@
+---
+date: "2017-10-31T21:28:43-05:00"
+description: "Is Gun Ownership Related to Homicide and Suicide Deaths?"
+draft: false
+image: pic13.jpg
+keywords: ""
+slug: nightingale
+title: Nightingale
+
+---
+
+# The Problem
+
+Gun control is one of the most hotly debated topics in the United States. There is a deep divide between those who consider it their Second Amendment right to bear arms, and those who believe the widespread posession of firearms is a threat to public health and safety. Here, we conceptualize two dominant risks posed by the widespread acceptance of firearms ownership in modern American society - suicide and homicide. In doing so, we are capable of identifying not only whether states with higher suicide rates are also prone to higher homicide rates, but also whether those with the highest rates share commonalities, such as state-level population size and, most importantly, proportion of firearm owners. 
+
+# The Data
+
+I employ a key dataset from the Centers for Disease Control and Prevention (CDC), to visualise the relationship between homicide and suicide rates and gun ownership across a selection of US states.
+
+# The Solution
+
+### Homicide and Suicide Rates in Black and White Non-Hispanic Men Across the United States
+
+**First, the required packages are loaded...**
+```{r load-libraries, results=FALSE, message=FALSE, warning=FALSE}
+
+library(tidyverse)  # Load ggplot2, dplyr, and all the other tidyverse packages
+library(mosaic)
+library(ggthemes)
+library(lubridate)
+library(fivethirtyeight)
+library(here)
+library(skimr)
+library(janitor)
+library(vroom)
+library(tidyquant)
+library(kableExtra)
+library(ggrepel)
+library(patchwork)
+
+```
+
+**Next, I load the required data and evaluate its core structure...**
+```{r loading_the_dataset, results=FALSE, message=FALSE, warning=FALSE}
+
+#We load in the required dataset and review its basic structure
+CDC_Males <- read_csv(here::here("data", "CDC_Males.csv"))
+skim(CDC_Males)
+glimpse(CDC_Males)
+
+```
+
+**Finally, I build a plot in order to show the relationship between Homicide and Suicide Rates, with the size of bubbles indicating state-level population and the colour of the bubble indicating the proportion of state-level gun ownership (%): **
+
+```{r creating_figure_3_in_ggplot,fig.height = 10, fig.width = 10, fig.align = "center"}
+
+#We define the necessary dataset and variables
+Figure_3_Data <- CDC_Males %>% 
+  
+  # include firearm-related cases only, exclude district of columbia, hawaii and united states
+  
+  filter(type.fac=="Firearm-related", !(ST %in% c("DC","HI","US"))) %>% 
+  
+  select(ST, average.pop.white, gun.house.prev.category,
+         adjusted.homicide.White, adjusted.suicide.White)
+  
+bubble_shade <- c("10.2%-19.9%" = "#fef0d9",
+                   "20.0%-34.9%" = "#fdcc8a",
+                   "35.0%-44.9%" = "#fc8d59",
+                   "45.0%-65.5%" = "#d7301f")
+
+ggplot(Figure_3_Data, aes(x = adjusted.suicide.White, 
+                          y = adjusted.homicide.White, 
+                          fill = gun.house.prev.category, 
+                          size = average.pop.white, 
+                          label = ST)) +
+  
+  # add geom layer
+  geom_point(shape = 21, # shape = 21 are points with border
+             color = "black") + # set border = black
+  
+  # add text label
+  geom_text_repel(color = 'black', size = 5) +
+  
+  # adjust size
+  scale_size_continuous(range = c(2, 18), # set size range, otherwise the smallest points would be too small
+                        breaks = c(500000,1500000,3000000,7000000), # break size into 4 as shown in the plot
+                        labels = c('500k','1.5m','3m','7m')) +
+  
+  # adjust fill
+  scale_fill_manual(values = bubble_shade) + # color points by gun ownership category
+  
+  # add a theme
+  theme_bw() +
+  
+  theme(aspect.ratio = 1) +
+  
+  # add labels for axes, fill legend and size legend
+  labs(x = 'White suicide rate (per 100,000 per year)',
+       y = 'White homicide rate (per 100,000 per year)',
+       fill = 'Gun ownership',
+       size = 'White population') +
+  
+  # set x and y coordinates to add annotate
+  annotate(geom = 'text', # geom type = text
+           label = "Spearman's rho: 0.74",
+           x = 25,
+           y = 0.8) +
+  
+  guides(fill = guide_legend(title = "Gun ownership", override.aes = list(size = 6), order = 1), 
+         size = guide_legend(title = "White population"), order = 2)
+
+```
+
+# An Interpretation
+
+This data shows a number of complex relationships at play. The Spearman's Rho indicates a relatively strong correlation between the White Suicide Rate and White Homicide Rate across all US states. Interestingly, this relationship does not seem to be well-explained by population, meaning that larger states do not seem particularly prone to high White Suicide or Homicide rates. This is demonstrated clearly by the presencer of states with 500,000 residents or less both in the middle of the cluster, with moderate homicide and suicide rates, and also at each extreme. Most notably, Alaska (AK) and New Mexico (NM) both have small populations, but both high suicide and homicide rates. 
+
+## Occam's Razor
+
+The simplest explanation is often the best. Here, while the rule is not without exception, we can see clearly that the darker datapoints are also those which, in general, experience both higher suicide and higher homicide rates than those which are less dark. In other words, states with higher gun ownership are also those with higher rates of white, non-hispanic male homicide and suicide. The obvious exceptions, such as Arizona and Nevada, do not invalidate this, though they do suggest that (as we would expect) higher homicide and suicide rates are not a function of gun ownership alone. 
+
+This provides compelling evidence in favour of the view that gun ownership and both homicide and suicide are strongly (and positively) related with one another. Regardless, entrenched traditions and gun lobbies, in addition to well-established bureaucracy and a less-than-progressive President, such evidence is repeatedly disregarded and discredited. As such, further research into the causal (rather than associational) relationships between gun ownership and firearms fatalities, and an awareness of what state-level factors condition this relationship, promises to be a critical catalyst for change. 
+
