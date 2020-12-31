@@ -1,16 +1,932 @@
 ---
-date: "2017-10-31T21:28:43-05:00"
-description: ""
+date: "2017-10-31T21:28:43-05:00" 
+description: "No Need to Panic, It's All Under Control... A Visual Critique of European Government's COVID-19 Response Strategies"
 draft: false
-image: pic13.jpg
+image: pic05.jpg
 keywords: ""
 slug: nightingale
 title: Nightingale
 
 ---
 
-<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
-<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="no-need-to-panic-its-all-under-control" class="section level1">
+<h1><strong>“No Need to Panic, It’s All Under Control…”</strong></h1>
+<div id="a-visual-critique-of-european-governments-covid-19-response-strategiess" class="section level2">
+<h2><strong>A Visual Critique of European Government’s COVID-19 Response Strategiess</strong></h2>
+<p><strong>Note:</strong> <em>this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.</em></p>
+<hr />
+</div>
+</div>
+<div id="executive-summary" class="section level1">
+<h1>Executive Summary</h1>
+<p>See <a href="https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing" title="A Visual Critique of European Government&#39;s COVID-19 Response Strategies">this Presentation Deck</a> for a full report of this project, including a summary of the research process, key results and a brief project evaluation.</p>
+</div>
+<div id="the-problem" class="section level1">
+<h1>The Problem</h1>
+<p>The global COVID-19 pandemic has defined the past year. With 63.3m cases causing 1.47m deaths worldwide, governments have fought relentlessly to contain the spread of the virus and reduce fatalities. While some have enforced stringent lockdowns for prolonged periods with high levels of social compliance, others have taken relaxed approaches in an effort to minimise the economic fallout. Since Europe represents a dense cluster of loosely affiliated, highly developed countries each governed autonomously, it is an optimal case study for understanding the role of policy in controlling the outbreak and minimising casualties. Guided by visual analysis, in this project we seek to identify patterns in the mitigation strategies of European governments, and ultimately identify best practices.</p>
+<p>See my <a href="https://public.tableau.com/profile/alberto7149#!/vizhome/COVID-19Dashboard_16070923853150/COVID-19Dashboard" title="Investigating the Spread of COVID-19">interactive Tableau Dashboard</a> to glean a better understanding of the spread and severity of the COVID-19 pandemic over time.</p>
+<p>This study asks the exploratory question “What have European governments done to mitigate the spread of COVID-19?”, before asking the more pressing follow-up: “How successful have these measures been at limiting cases and fatalities, and what be learned from both the greatest successes and failures?”. Employing a breadth of visual and statistical techniques, including spatial mapping, time-series analysis, and linear regression, we compare the success of European governments in containing the fall-out from the global COVID-19 pandemic.</p>
+<p><strong>Specifically, we provide answers to the questions:</strong></p>
+<p><strong>i. WHERE have COVID-19 response strategies been successful?;</strong></p>
+<p><strong>ii. WHAT mitigation strategies have been most effective at combatting the virus?;</strong></p>
+<p><strong>iii. WHICH factors are most important in determining the success of mitigation strategies and;</strong></p>
+<p><strong>iv. HOW does the theorised efficacy of mitigation strategies vary between countries?</strong></p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p><strong>We employ 3 datasets in for analysis, each of which are cleaned individually, before being combined into a single data frame filtered only to European cases, covid_europe</strong></p>
+<p>main dataset -&gt; owid-covid-data<br />
+<a href="https://covid.ourworldindata.org/data/owid-covid-data.csv" class="uri">https://covid.ourworldindata.org/data/owid-covid-data.csv</a></p>
+<p>hospital data -&gt; data<br />
+<a href="https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19" class="uri">https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19</a></p>
+<p>testing data -&gt; covid-testing-all-observations<br />
+<a href="https://github.com/owid/covid-19-data/blob/master/public/data/testing/covid-testing-all-observations.csv" class="uri">https://github.com/owid/covid-19-data/blob/master/public/data/testing/covid-testing-all-observations.csv</a></p>
+</div>
+<div id="the-solution" class="section level1">
+<h1>The Solution</h1>
+<p>These analyses drive the conclusion that, though the efficacy of certain measures is highly country-specific, <strong>stringent</strong>, <strong>stable</strong> and <strong>rapidly enacted (fast)</strong> measures clearly predict how well national governments handled the crisis. Specifically, we find that the <strong>timing</strong> of government responses relative to the first nationwide outbreak (the first reported case) is the most important factor in determining their success in keeping cases down. This provides valuable lessons for governments as they battle the second and third waves of the pandemic and seek to overcome pandemics in future.</p>
+</div>
+<div id="analysis-in-r" class="section level1">
+<h1><strong>Analysis in R</strong></h1>
+<hr />
+<div id="objective-1-plots-1-and-2" class="section level3">
+<h3>OBJECTIVE 1 (Plots 1 and 2)</h3>
+<p><strong>Visualise the Current State of the COVID-19 Pandemic in Europe</strong></p>
+<p><em>Outcomes:</em> Two Spatial Maps, Demonstrating Current Normalised Cases and Deaths Across Europe.</p>
+<p><em>Insights:</em> An understanding of how different European regions have experienced the crisis differently, allowing selection of key cases.</p>
+</div>
+<div id="objective-2-plots-3-and-4" class="section level3">
+<h3>OBJECTIVE 2 (Plots 3 and 4)</h3>
+<p><strong>Compare How Key European Countries Have Experienced the Pandemic in Terms of Cases and Deaths, and the Measures they Have Taken</strong></p>
+<p><em>Outcomes:</em> Time Series Analyses Illustrating the Relationship between Stringency of Government Measures and subsequent cases/deaths.</p>
+<p><em>Insights:</em> Identification of countries where response strategies were and were not <em>i) successful</em>, and selection of interesting cases.</p>
+</div>
+<div id="objective-3-plot-5" class="section level3">
+<h3>OBJECTIVE 3 (Plot 5)</h3>
+<p><strong>Deep-Dive into Specific, Characteristically Distinct Government Responses to the Pandemic, selected using plots 3 and 4</strong></p>
+<p><em>Outcomes:</em> Time Series Analyses Illustrating the Relationship between Cases, Tests, and Government Measures for Selected Cases from Plot 3.</p>
+<p><em>Insights:</em> Deeper understanding of the type of policies underlying the stringency index, and their relative <em>ii) efficacy</em> and timing.</p>
+</div>
+<div id="objective-4-plot-6" class="section level3">
+<h3>OBJECTIVE 4 (Plot 6)</h3>
+<p><strong>Empirically ratify hypothesised relationships between certain factors and COVID-19 cases drawn from Plots 1-5,rank these factors by importance, and evaluate country-level heterogeneity</strong></p>
+<p><em>Outcomes:</em> Ordinary Least Squares (OLS) Linear Regression Model Which Provides Both Factor Coefficient Estimates and Ranks Factor Importance.</p>
+<p><em>Insights:</em> Empirical relationships between government stringency (response) and outcomes, demonstrating: <em>iii) which factors are most important in determining success of mitigation strategies</em> and <em>iv) how the efficacy of mitigation strategies vary between countries</em>.</p>
+</div>
+</div>
+<div id="load-data" class="section level1">
+<h1>Load Data</h1>
+<pre class="r"><code>#loading first data set, incl. GDP
+owid_covid_data &lt;- read_csv(here::here(&#39;data&#39;,&#39;owid-covid-data.csv&#39;))
+#cleaning the names
+covid_data &lt;- owid_covid_data %&gt;% 
+  clean_names()
+
+#loading second data set: testing data
+covid_testing_all_observations &lt;- read_csv(here::here(&#39;data&#39;,&#39;covid-testing-all-observations.csv&#39;))
+#cleaning the names
+covid_testing&lt;- covid_testing_all_observations %&gt;% 
+  clean_names()
+
+#loading third data set: number of hospitalized patients
+hospital_data_original &lt;- vroom(here::here(&#39;data&#39;,&#39;data.csv&#39;))
+#cleaning the names
+hospital_data &lt;- hospital_data_original %&gt;% 
+  clean_names()</code></pre>
+</div>
+<div id="clean-data" class="section level1">
+<h1>Clean data</h1>
+<div id="dataset-1-owid-covid-data" class="section level2">
+<h2>Dataset 1: owid-covid-data</h2>
+<p>We start with the <code>covid_data</code>, which has 48 covid-related indicators of a country in a given date. From the <code>skim</code> below, we observe:</p>
+<ul>
+<li>17 completely empty columns</li>
+<li>Incompleteness in almost all columns</li>
+</ul>
+<pre class="r"><code>skim(covid_data)</code></pre>
+<pre class="r"><code>#check for duplicates
+covid_data %&gt;% get_dupes(date, iso_code) # no duplicates 
+#Remove empty columns and rows
+covid_data_clean &lt;- remove_empty(covid_data, which = c(&quot;rows&quot;,&quot;cols&quot;)) # 17 columns and 0 rows removed</code></pre>
+<p>We start to clean each columns. We can see there are some rows with <code>location = International</code>which makes our <code>iso_code</code> NA. Since our analysis mainly focus on each countries, we will delete these rows. For the <code>continent</code> variable, we found that its NA come from<code>location = 'World'</code>, which is actually derivable from other rows, thus we will delete them.</p>
+<pre class="r"><code># NAs in iso_code
+head(covid_data_clean[is.na(covid_data$iso_code),])
+# delete them
+covid_data_clean &lt;- 
+  covid_data_clean %&gt;% filter(!is.na(iso_code))
+# NAs in continent
+head(covid_data_clean[is.na(covid_data_clean$continent),])
+covid_data_clean &lt;- covid_data_clean %&gt;% 
+  filter(!is.na(continent))</code></pre>
+<p>For the <code>gdp_per_capita</code> column, there are 28 countries/territories with missing values. And they are missing across all the days. We impute some of them, with data from world bank if it is availble, and leave the rest in NAs</p>
+<pre class="r"><code># check if the gdp_per_capita of countries are NA all the time 
+covid_data_clean %&gt;% 
+  filter(is.na(gdp_per_capita)) %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(all_na = all(is.na(gdp_per_capita)))
+
+covid_data_clean[covid_data_clean$location ==&#39;Andorra&#39;,&#39;gdp_per_capita&#39;] = 45887
+covid_data_clean[covid_data_clean$location ==&#39;Cuba&#39;,&#39;gdp_per_capita&#39;] = 6816
+covid_data_clean[covid_data_clean$location ==&#39;Faeroe Islands&#39;,&#39;gdp_per_capita&#39;] = 48530
+covid_data_clean[covid_data_clean$location ==&#39;Greenland&#39;,&#39;gdp_per_capita&#39;] = 49311
+covid_data_clean[covid_data_clean$location ==&#39;Guam&#39;,&#39;gdp_per_capita&#39;] = 31477
+covid_data_clean[covid_data_clean$location ==&#39;Isle of Man&#39;,&#39;gdp_per_capita&#39;] = 90190
+covid_data_clean[covid_data_clean$location ==&#39;Liechtenstein&#39;,&#39;gdp_per_capita&#39;] = 141200
+covid_data_clean[covid_data_clean$location ==&#39;Monaco&#39;,&#39;gdp_per_capita&#39;] = 196061
+covid_data_clean[covid_data_clean$location ==&#39;Northern Mariana Islands&#39;,&#39;gdp_per_capita&#39;] = 18577
+covid_data_clean[covid_data_clean$location ==&#39;Turks and Caicos Islands&#39;,&#39;gdp_per_capita&#39;] = 21028
+covid_data_clean[covid_data_clean$location ==&#39;United States Virgin Islands&#39;,&#39;gdp_per_capita&#39;] = 11069
+
+skim(covid_data_clean)</code></pre>
+</div>
+<div id="dataset-2-hospital-data" class="section level2">
+<h2>Dataset 2: Hospital Data</h2>
+<pre class="r"><code>skim(hospital_data)</code></pre>
+<p>We remove all rows with no indicator as we don’t know what it would stand for in cases where <code>indicator</code> = NA, similarly we remove rows with NA in <code>value</code></p>
+<pre class="r"><code>hospital_data_clean &lt;- hospital_data %&gt;%
+  filter(!is.na(indicator))
+hospital_data_clean &lt;- hospital_data_clean %&gt;%
+  filter(!is.na(value))</code></pre>
+<p>We then deselect some columns and pivot hospital data to a clean format</p>
+<pre class="r"><code>hospital_data_clean &lt;- hospital_data_clean %&gt;% 
+  pivot_wider(names_from=indicator, values_from=value) %&gt;% 
+  select(c(1,2,6,7)) %&gt;% 
+  clean_names() %&gt;% 
+  group_by(date, country) %&gt;% 
+  summarise(daily_hospital_occupancy = sum(daily_hospital_occupancy),
+            daily_icu_occupancy = sum(daily_icu_occupancy))
+
+hospital_data_clean %&gt;% get_dupes(date, country) # no duplicates</code></pre>
+</div>
+<div id="dataset-3-covid-testing-dataset" class="section level2">
+<h2>Dataset 3: COVID Testing Dataset</h2>
+<p>We explore the dataset…</p>
+<pre class="r"><code>skim(covid_testing)
+
+# we can drop a few variables such as source_url, source_label and note
+
+covid_testing_process &lt;- covid_testing %&gt;% 
+  select(-c(source_url, source_label, notes))
+         
+skim(covid_testing_process)
+
+#show a couple of entries for specific country
+
+covid_testing_process %&gt;% 
+  filter(iso_code == &quot;POL&quot;) %&gt;% 
+  arrange(desc(date)) %&gt;% 
+  head(5)</code></pre>
+<p>As we can observe there are two metrics: people tested and samples tested. Having browsed the source of the dataset we are not able to conclude which data is correct, thus we are going to take daily average for specific dates.</p>
+<pre class="r"><code>#average daily data per country and omit na&#39;s
+
+covid_testing_process1 &lt;-covid_testing_process %&gt;% 
+  dplyr::group_by(date, iso_code) %&gt;% 
+  dplyr::summarise(cumulative_tests = mean(cumulative_total, na.rm = TRUE),
+            daily_tests = mean(daily_change_in_cumulative_total, na.rm = TRUE),
+            cumulative_tests_per_thousand = mean(cumulative_total_per_thousand, na.rm = TRUE),
+            x7_day_daily_test_change = mean(x7_day_smoothed_daily_change, na.rm = TRUE),
+            x7_day_daily_test_change_per_thousand = mean(x7_day_smoothed_daily_change_per_thousand, na.rm = TRUE),
+            short_term_tests_per_case = mean(short_term_tests_per_case, na.rm = TRUE),
+            short_term_positive_rate = mean(short_term_positive_rate, na.rm = TRUE))
+
+#check the results
+
+covid_testing_process1 %&gt;% 
+  filter(iso_code == &quot;USA&quot;) %&gt;% 
+  arrange(desc(date)) %&gt;% 
+  head(5)</code></pre>
+</div>
+<div id="merging-the-3-datasets-into-1" class="section level2">
+<h2>Merging the 3 Datasets into 1</h2>
+<pre class="r"><code>#rename columns in hospital dataset in order to join datasets
+
+hospital_data_clean &lt;- hospital_data_clean %&gt;% 
+  rename(location = country)
+
+#merging datasets
+
+covid_total &lt;- covid_data_clean %&gt;% 
+  left_join(hospital_data_clean, by= c(&quot;location&quot;, &quot;date&quot;)) %&gt;% 
+  left_join(covid_testing_process1, by = c(&quot;date&quot;, &quot;iso_code&quot;))
+
+#see what&#39;s inside
+
+skim(covid_total)</code></pre>
+<p>We observe that there are still quite a few missing values, however we are going to focus on Europe in our analysis.</p>
+<pre class="r"><code>#filter for European countries
+
+unique(covid_total$continent)
+
+covid_europe &lt;- covid_total %&gt;% 
+  filter(continent == &quot;Europe&quot;) %&gt;% 
+  clean_names()
+
+skim(covid_europe)</code></pre>
+</div>
+<div id="enriching-dataset" class="section level2">
+<h2>Enriching dataset</h2>
+<p>We are going to enrich the dataset by defining the following variables:</p>
+<ul>
+<li>day0_cases -&gt; date when daily cases first hit 1000<br />
+</li>
+<li>day0_deaths -&gt; date when daily deaths first hit 100<br />
+</li>
+<li>day0_cases_elapsed -&gt; days elapsed from day_0_cases<br />
+</li>
+<li>day0_deaths_elapsed -&gt; days elapsed from day_0_deaths<br />
+</li>
+<li>day0_difference -&gt; days elapsed between daily cases first hit 1000 and daily deaths 100</li>
+</ul>
+<pre class="r"><code>##days elapsed since daily cases exceeded 1000 for the first time
+
+#find the date zero
+calc_day0 &lt;- covid_europe %&gt;% 
+  filter(new_cases &gt;= 1000) %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(day0_cases = min(date))
+
+#merge data with zero date
+covid_europe_process &lt;- covid_europe %&gt;% 
+  left_join(calc_day0, by = &quot;location&quot;) %&gt;% 
+
+#add metric counting days from day 0
+
+  mutate(day0_cases_elapsed = as.numeric(date - day0_cases)) %&gt;% 
+  
+  #assign NA for negative days
+  mutate(day0_cases_elapsed = case_when(
+    day0_cases_elapsed &lt; 0 ~ NA_real_,
+    TRUE ~ day0_cases_elapsed
+  ))
+
+##days elapsed since daily deaths exceeded 100 for the first time
+
+#find the date zero
+calc_day0 &lt;- covid_europe %&gt;% 
+  filter(new_deaths &gt;= 100) %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(day0_deaths = min(date))
+
+#merge data with zero date
+covid_europe_process2 &lt;- covid_europe_process %&gt;% 
+  left_join(calc_day0, by = &quot;location&quot;) %&gt;% 
+
+#add metric counting days from day 0
+
+  mutate(day0_deaths_elapsed = as.numeric(date - day0_deaths)) %&gt;% 
+  
+  #assign NA for negative days
+  mutate(day0_deaths_elapsed = case_when(
+    day0_deaths_elapsed &lt; 0 ~ NA_real_,
+    TRUE ~ day0_deaths_elapsed
+  ))
+
+##days elapsed between daily cases hit 1000 and daily deaths hit 100
+
+#use threshold for daily deaths (some countries exceeded 1000 daily cases, but not 100 dail deaths)
+
+calc_day0 &lt;- covid_europe_process2 %&gt;% 
+  filter(new_deaths &gt;= 100) %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(day0_difference = min(as.numeric(day0_deaths - day0_cases))) #use min in order to get only 1 result per country
+
+#merge all data
+
+covid_europe_process3 &lt;- covid_europe_process2 %&gt;% 
+  left_join(calc_day0, by = &quot;location&quot;)
+
+covid_europe &lt;- covid_europe_process3
+
+#clean temporary objects
+
+rm(calc_day0,covid_europe_process, covid_europe_process2, covid_europe_process3)</code></pre>
+<p>Adjustments made in the following two plots:</p>
+<ol style="list-style-type: decimal">
+<li>We changed the date to most recent instead of Nov 24 2020 to avoid NAs, because some countries may not have yet reported their cases in that day</li>
+<li>We changed the color scale, using <a href="https://gka.github.io/palettes/#/9%7Cs%7Cffffe0,920000%7Cffffe0,ff005e,93003a%7C1%7C1" class="uri">https://gka.github.io/palettes/#/9|s|ffffe0,920000|ffffe0,ff005e,93003a|1|1</a></li>
+<li>We added some country names on the map. If we show all of them that would be too busy. We can adjust the names of the countries we want to show by changing the <code>country_list</code></li>
+</ol>
+<p>#Building Visualisations to Tell Our Story</p>
+<p>We begin by setting the scene of the ‘state of COVID=19’ in Europe, before exploring the relationship between government measures and deaths/cases, and delving into 6 distinct country case studies to understand how specific public policy decisions have translated into COVID-19 outcomes. Finally, we build a predictive model using OLS Regression.</p>
+</div>
+<div id="plot-1---map-of-covid-19-cases-across-europe" class="section level2">
+<h2>Plot 1 - Map of COVID-19 Cases Across Europe</h2>
+<p><strong>Designed to demonstrate the current state of the COVID-19 Pandemic in Europe and inform further avenues of inquiry</strong></p>
+<pre class="r"><code>top_5_country &lt;- covid_europe %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(sum = sum(new_cases_per_million)) %&gt;% 
+  arrange(desc(sum)) %&gt;% 
+  top_n(5) %&gt;% 
+  select(location) %&gt;% 
+  pull()
+# Top 5 countries with most cases are France, Russia, Spain, United Kingdom and Italy</code></pre>
+<pre class="r"><code># combine map with covid european data at the most recent date
+covid_europe_lateset &lt;- covid_europe %&gt;% 
+  group_by(location) %&gt;% 
+  mutate(my_rank = order(date, decreasing = TRUE)) %&gt;% 
+  filter(my_rank == 1)
+
+top_5_country_latest &lt;- covid_europe_lateset %&gt;% 
+  group_by(location) %&gt;% 
+  summarise(sum = sum(new_cases_per_million)) %&gt;% 
+  arrange(desc(sum)) %&gt;% 
+  top_n(5) %&gt;% 
+  select(location) %&gt;% 
+  pull()
+
+top_5_country_latest &lt;- c(&#39;Switzerland&#39;,&#39;San Marino&#39;,&#39;Luxembourg&#39;,&#39;Montenegro&#39;)
+
+scale1 &lt;- c(&#39;#feedde&#39;,&#39;#fdd0a2&#39;,&#39;#fdae6b&#39;,&#39;#fd8d3c&#39;,&#39;#f16913&#39;,&#39;#d94801&#39;,&#39;#8c2d04&#39;)
+scale2 &lt;- c(&#39;#fee5d9&#39;,&#39;#fcbba1&#39;,&#39;#fc9272&#39;,&#39;#fb6a4a&#39;,&#39;#ef3b2c&#39;,&#39;#cb181d&#39;,&#39;#99000d&#39;)
+scale3 &lt;- c(&#39;#fee5d9&#39;,&#39;#fb6a4a&#39;,&#39;#ef3b2c&#39;,&#39;#cb181d&#39;,&#39;#99000d&#39;)
+scale4 &lt;- c(&#39;#fee5d9&#39;,&#39;#ef3b2c&#39;,&#39;#cb181d&#39;,&#39;#99000d&#39;)
+
+country_list_lastest = c(top_5_country_latest,&#39;Poland&#39;,&#39;Sweden&#39;, &#39;England&#39;)
+country_list = c(top_5_country,&#39;Poland&#39;,&#39;Sweden&#39;, &#39;England&#39;)
+# get the world map
+worldmap &lt;- ne_countries(scale = &#39;medium&#39;, type = &#39;map_units&#39;, continent = &#39;europe&#39;,
+                         returnclass = &#39;sf&#39;)
+# get the euro map
+europe_cropped &lt;- st_crop(worldmap, xmin = -20, xmax = 60,
+                                    ymin = 30, ymax = 70)
 
 
 
+euro_joined &lt;- left_join(europe_cropped, covid_europe_lateset, by = c(&quot;admin&quot; = &quot;location&quot;))
+
+
+
+# mapping the covid data
+map_total &lt;- euro_joined %&gt;% 
+  ggplot() +
+  geom_sf(aes(fill = total_cases_per_million)) +
+  geom_sf_text(data = euro_joined[euro_joined$subunit %in% country_list,], aes(label = admin), size = 2, fontface = &quot;bold&quot;,color = &#39;grey10&#39;) +
+  labs(title = &quot;&#39;Get Off My Lawn&#39; Substantial Differences in Cases Emerge Between European Neighbours&quot;,subtitle = &quot;Most Recent (24/11/2020) Total Cases per Million in Europe&quot;, x=&#39;&#39;,y=&#39;&#39;
+       # caption = &#39;Source:https://owid.data&#39;
+       ) +
+  scale_fill_gradientn(name = NULL,colours = scale3,labels = c(0,&#39;20K&#39;,&#39;40K&#39;,&#39;60K&#39;,&#39;80K&#39;)) +
+  theme_fivethirtyeight() + 
+  theme(legend.position = &#39;right&#39;, legend.direction = &#39;vertical&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;), 
+        plot.subtitle = element_text(size = 10), 
+        # plot.caption = element_text(size = 5),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7))
+
+map_total</code></pre>
+<pre class="r"><code>knitr::include_graphics(&quot;images/fig01.png&quot;)</code></pre>
+<p><img src="images/fig01.png" width="983" style="display: block; margin: auto auto auto 0;" />
+## Plot 2 - Map of COVID-19 Cases Across Europe, by Wave</p>
+<p><strong>Designed to Demonstrate how the First and Second Waves Hit Different Countries Differently - to Inform Our Case-Study Selection</strong></p>
+<pre class="r"><code># combine map with covid european data at the most recent date
+covid_europe_lateset1 &lt;- covid_europe %&gt;% 
+  filter(date == &quot;2020-09-01&quot;) %&gt;%
+    group_by(location) 
+
+covid_europe_lateset2 &lt;- covid_europe %&gt;% 
+  filter(date == &quot;2020-11-20&quot;) %&gt;%
+    group_by(location) 
+
+covid_europe_lateset3 &lt;- left_join(covid_europe_lateset2, covid_europe_lateset1, by = c(&quot;location&quot; = &quot;location&quot;))
+
+# Calculating the cases between September and 20November
+covid_europe_lateset3$total_cases_lockdow2_per_mil &lt;- covid_europe_lateset3$total_cases_per_million.x-covid_europe_lateset3$total_cases_per_million.y
+
+
+#joining maps with cases in lockdown2
+euro_joined1 &lt;- left_join(europe_cropped, covid_europe_lateset1, by = c(&quot;admin&quot; = &quot;location&quot;))
+euro_joined2 &lt;- left_join(europe_cropped, covid_europe_lateset3, by = c(&quot;admin&quot; = &quot;location&quot;))
+
+
+par(mfrow=c(1,2))
+
+#Lockdown 1
+# mapping the covid data
+map_total_lockdown1 &lt;- euro_joined1 %&gt;% 
+  ggplot() +
+  geom_sf(aes(fill = total_cases_per_million)) +
+  geom_sf_text(data = euro_joined1[euro_joined1$subunit %in% country_list,], aes(label = admin), size = 2, fontface = &quot;bold&quot;,color = &#39;grey10&#39;) +
+  labs(title = &#39;Though Sweden Was Amongst the Worst Affected by Wave 1...&#39;,subtitle = &quot;Total Cases Per Million for the First Wave&quot;, x=&#39;&#39;,y=&#39;&#39;
+       # caption = &#39;Source:https://owid.data&#39;
+       ) +
+  scale_fill_gradientn(name = NULL,colours = scale3,labels = c(0,&#39;20K&#39;,&#39;40K&#39;,&#39;60K&#39;,&#39;80K&#39;)) +
+  theme_fivethirtyeight() + 
+  theme(legend.position = &#39;right&#39;, legend.direction = &#39;vertical&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;), 
+        plot.subtitle = element_text(size = 10), 
+        # plot.caption = element_text(size = 5),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7))
+
+#Lockdown2
+# mapping the covid data
+map_total_lockdown2 &lt;- euro_joined2 %&gt;% 
+  ggplot() +
+  geom_sf(aes(fill = total_cases_lockdow2_per_mil)) +
+  geom_sf_text(data = euro_joined2[euro_joined2$subunit %in% country_list,], aes(label = admin), size = 2, fontface = &quot;bold&quot;,color = &#39;grey10&#39;) +
+  labs(title = &#39;...Central and Southern Europe Were Hit Hardest by Wave 2&#39;,subtitle = &quot;Total Cases Per Million for the Second Wave&quot;, x=&#39;&#39;,y=&#39;&#39;
+       # caption = &#39;Source:https://owid.data&#39;
+       ) +
+  scale_fill_gradientn(name = NULL,colours = scale4,labels = c(0,&#39;20K&#39;,&#39;40K&#39;,&#39;60K&#39;)) +
+  theme_fivethirtyeight() + 
+  theme(legend.position = &#39;right&#39;, legend.direction = &#39;vertical&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;), 
+        plot.subtitle = element_text(size = 10), 
+        # plot.caption = element_text(size = 5),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7))</code></pre>
+<pre class="r"><code>map_lockdowns &lt;- ggarrange(map_total_lockdown1, map_total_lockdown2, 
+                    ncol = 2, nrow = 1,
+                    heights = c(0.7,0.7), widths = c(1,1))
+map_lockdowns</code></pre>
+</div>
+<div id="plot-3---investigating-the-relationship-between-stringency-measures-and-cases-for-prominent-european-countries" class="section level2">
+<h2>Plot 3 - Investigating the relationship between stringency measures and cases for prominent European countries</h2>
+<p><strong>Designed in order to demonstrate, temporally, the relationship between government stringency measures and cases</strong></p>
+<pre class="r"><code>#(1) New Cases Smoothed, Per Million
+
+coeff=12
+
+cases_stringency &lt;- covid_europe %&gt;% 
+  group_by(location) %&gt;% 
+  filter(new_cases_smoothed_per_million&gt;0) %&gt;% 
+  filter(location %in% c(&quot;Iceland&quot;,&quot;Finland&quot;,&quot;Sweden&quot;,&quot;Denmark&quot;,&quot;Germany&quot;,&quot;Switzerland&quot;,&quot;United Kingdom&quot;,&quot;France&quot;,&quot;Netherlands&quot;,&quot;Norway&quot;,&quot;Greece&quot;,&quot;Italy&quot;,&quot;Spain&quot;,&quot;Czech Republic&quot;,&quot;Poland&quot;,&quot;Luxembourg&quot;)) %&gt;% 
+  
+  ggplot(aes(x=date))+
+  facet_wrap(~factor(location, levels=c(&quot;Iceland&quot;,&quot;Finland&quot;,&quot;Sweden&quot;,&quot;Denmark&quot;,&quot;Germany&quot;,&quot;Switzerland&quot;,&quot;United Kingdom&quot;,&quot;France&quot;,&quot;Netherlands&quot;,&quot;Norway&quot;,&quot;Greece&quot;,&quot;Italy&quot;,&quot;Spain&quot;,&quot;Czech Republic&quot;,&quot;Poland&quot;,&quot;Luxembourg&quot;)))+
+  geom_line(aes(y=new_cases_smoothed_per_million),colour=&quot;blue&quot;)+
+  geom_line(aes(y=stringency_index*coeff), colour=&quot;green&quot;)+
+  scale_y_continuous(name = &quot;Smoothed New COVID-19 Cases Per Million&quot;,
+    # Add a second axis and specify its features
+    sec.axis = sec_axis( trans=~./coeff, name=&quot;Stringency Index&quot;)
+  )+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(),
+        plot.title = element_text(size = 15, face = &quot;bold&quot;)) +
+  labs(title=&quot;Too Little Too Late? Some Countries&#39; Measures Suggest Overconfidence in the Second Wave&quot;, 
+       subtitle= &quot;Relationship between &lt;span style=&#39;color:blue;&#39;&gt;New Daily COVID-19 Cases&lt;/span&gt; and &lt;span style=&#39;color:green;&#39;&gt;National Stringency Index&lt;/span&gt; &lt;/span&gt;&quot;,x=&quot;Date&quot;)+
+  theme(legend.title=element_blank()) +
+  theme(legend.position=&quot;top&quot;) +
+  theme(plot.subtitle = element_markdown()) 
+ 
+cases_stringency</code></pre>
+</div>
+<div id="plot-4---investigating-the-relationship-between-stringency-measures-and-deaths-for-prominent-european-countries" class="section level2">
+<h2>Plot 4 - Investigating the relationship between stringency measures and deaths for prominent European countries</h2>
+<p><strong>Designed in order to demonstrate, temporally, the relationship between government stringency measures and deaths, since we speculated cases may be misleading as an indicator of government response efficacy in the first wave, due to lack of testing</strong></p>
+<pre class="r"><code># (2) New Deaths Smoothed, Per Million
+
+coeff=5
+
+library(ggtext)
+
+death_stringency &lt;- covid_europe %&gt;% 
+  group_by(location) %&gt;% 
+  filter(new_deaths_smoothed_per_million&gt;0) %&gt;% 
+  filter(location %in% c(&quot;Iceland&quot;,&quot;Finland&quot;,&quot;Sweden&quot;,&quot;Denmark&quot;,&quot;Germany&quot;,&quot;United Kingdom&quot;,&quot;Switzerland&quot;,&quot;France&quot;,&quot;Netherlands&quot;,&quot;Norway&quot;,&quot;Greece&quot;,&quot;Italy&quot;,&quot;Spain&quot;,&quot;Czech Republic&quot;,&quot;Poland&quot;,&quot;Luxembourg&quot;)) %&gt;% 
+  
+  ggplot(aes(x=date))+
+  facet_wrap(~factor(location, levels=c(&quot;Iceland&quot;,&quot;Finland&quot;,&quot;Sweden&quot;,&quot;Denmark&quot;,&quot;Germany&quot;,&quot;Switzerland&quot;,&quot;United Kingdom&quot;,&quot;France&quot;,&quot;Netherlands&quot;,&quot;Norway&quot;,&quot;Greece&quot;,&quot;Italy&quot;,&quot;Spain&quot;,&quot;Czech Republic&quot;,&quot;Poland&quot;,&quot;Luxembourg&quot;)))+
+  geom_line(aes(y=new_deaths_smoothed_per_million),colour=&quot;red&quot;)+
+  geom_line(aes(y=stringency_index/coeff), colour=&quot;green&quot;)+
+  scale_y_continuous(name = &quot;Smoothed New COVID-19 Deaths Per Million&quot;,
+    # Add a second axis and specify its features
+    sec.axis = sec_axis( trans=~.*coeff, name=&quot;Stringency Index&quot;)
+  )+
+  theme_fivethirtyeight()+
+  theme(axis.title = element_text(),
+        plot.title = element_text(size = 15, face = &quot;bold&quot;)) +
+  labs(title=&quot;Early Bird Catches the Worm? Only Countries with Rapid and Sustained Stringency Measures Culled Deaths&quot;, 
+       subtitle= &quot;Relationship between &lt;span style=&#39;color:red;&#39;&gt;New Daily COVID-19 Deaths&lt;/span&gt; and &lt;span style=&#39;color:green;&#39;&gt;National Stringency Index&lt;/span&gt; &lt;/span&gt;&quot;,
+       x=&quot;Date&quot;)+
+  theme(legend.title=element_blank()) +
+  theme(legend.position=&quot;top&quot;) +
+  theme(plot.subtitle = element_markdown()) 
+
+death_stringency</code></pre>
+</div>
+<div id="plot-5a-wave-1---deep-dive-into-6-specific-case-studies-representing-characteristically-distinct-government-responses-to-the-pandemic" class="section level2">
+<h2>Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic</h2>
+<p><strong>Again, we designed these visualisations as time-series, since Plots 3 and 4 demonstrated to us that timing, as well as stringency, seemed to be strongly related to outcomes in terms of cases and deaths</strong></p>
+<p><strong>Given that we also observe substantial differences in the stories told by Cases and Deaths in the first wave, in plots 3 and 4, we also thought it important to include COVID-19 testing data, to ensure that though we were evaluating case evolution, we were weary of the biases associated with different levels of national testing</strong></p>
+<pre class="r"><code>covid_europe &lt;- covid_europe %&gt;% 
+  mutate(x7_day_daily_test_change_per_million = x7_day_daily_test_change_per_thousand*1000)
+covid_europe %&gt;% 
+  filter(!is.na(x7_day_daily_test_change_per_thousand)) %&gt;% 
+  select(new_cases_per_million,x7_day_daily_test_change_per_million)</code></pre>
+<pre class="r"><code>uk_1wave &lt;- covid_europe %&gt;% 
+  # to create first wave, we filter the month
+  filter(location == &#39;United Kingdom&#39; &amp; month(date)&lt;9 &amp; month(date)&gt;1) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-03-23&#39;), xmax = as.Date(&#39;2020-05-13&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  # new cases left axis line
+  geom_line(aes(y = new_cases_smoothed_per_million,color = &#39;Cases&#39;)) +
+  # tests right axis line
+  # we devide y by 8 s.t it doesn&#39;t distort the graph
+  geom_line(aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+
+  # create tiles for the first lockdown
+  # first lockdown reference line
+  geom_vline(xintercept = as.Date(&#39;2020-03-23&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  # first lockdown end reference line
+  geom_vline(xintercept = as.Date(&#39;2020-05-13&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  
+  # second lockdown reference line
+  geom_vline(xintercept = as.Date(&#39;2020-11-05&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  
+  # add annotate
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-04-17&#39;),y = 120, label=&#39;First\nLockdown&#39;,color = &#39;black&#39;,size=3.5) +
+
+
+  theme_fivethirtyeight() +   
+  labs(title = &#39;UK&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),name = &#39;Daily Cases&#39;,labels = scales::comma,sec.axis = sec_axis(~.*40, name = &quot;Daily Tests&quot;,labels = scales::comma))</code></pre>
+<pre class="r"><code>poland_1wave &lt;- covid_europe %&gt;% 
+  filter(location == &#39;Poland&#39; &amp; month(date) &lt; 9) %&gt;% 
+  ggplot(aes(x = date)) +
+  #lockdown and first easing
+  geom_rect(aes(xmin = as.Date(&#39;2020-03-25&#39;), xmax = as.Date(&#39;2020-05-04&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Daily Tests&quot;)) + #divide daily tests by 10 in order not to distort graph
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-03-25&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+  #ease of lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-05-04&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ #add dashed line
+  
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-04-15&#39;),y = 120,label=&#39;First\nLockdown&#39;,size=3.5) +
+  
+  theme_fivethirtyeight() +
+  labs(title = &#39;Poland&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),labels = scales::comma ,sec.axis = sec_axis(~.*40,labels = scales::comma))  #multiply secondary axis by 10 in order to show actual results</code></pre>
+<pre class="r"><code>italy_1wave &lt;- covid_europe %&gt;% 
+  # to create first wave, we filter the month
+  filter(location == &#39;Italy&#39; &amp; month(date)&lt;9 &amp; month(date)&gt;1) %&gt;% 
+  ggplot(aes(x = date)) +
+  # create tiles for the first lockdown Zona rossa milano
+  geom_rect(aes(xmin = as.Date(&#39;2020-02-21&#39;), xmax = as.Date(&#39;2020-03-08&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  # create tiles for the first lockdown Zona rossa nord total
+  geom_rect(aes(xmin = as.Date(&#39;2020-03-08&#39;), xmax = as.Date(&#39;2020-04-03&#39;), 
+  
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line(aes(y = new_cases_smoothed_per_million, group = 1,color = &#39;Cases&#39;)) +
+  
+  # tests right axis line
+  # we devide y by 8 s.t it doesn&#39;t distort the graph
+  geom_line( aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  
+  # first lockdown reference line: Zona Rossa Milano
+  geom_vline(xintercept = as.Date(&#39;2020-02-21&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  # first lockdown end reference line Zona rossa nord total
+  geom_vline(xintercept = as.Date(&#39;2020-03-08&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  # first lockdown end reference line
+  geom_vline(xintercept = as.Date(&#39;2020-04-03&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  
+  # add annotate
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-02-29&#39;),y = 110, label=&#39;Lodi &amp;\nPadua&#39;, color = &#39;black&#39;,size=3.5) +
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-03-21&#39;),y = 110, label=&#39;North\nItaly&#39;, color = &#39;black&#39;,size=3.5)+
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-03-11&#39;),y = 140, label=&#39;Lockdown&#39;, face= &quot;bold&quot;, color = &#39;black&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Italy&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),labels = scales::comma,
+                     sec.axis = sec_axis(~.*40,labels = scales::comma)) </code></pre>
+<pre class="r"><code>sweden_1wave &lt;- covid_europe %&gt;% 
+  filter((location == &#39;Sweden&#39;) &amp; (month(date) &lt; 9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  #geom_rect(aes(xmin = as.Date(&#39;2020-03-16&#39;), xmax = as.Date(&#39;2020-06-13&#39;), ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-03-16&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  #ease of lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-06-13&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-04-16&#39;),y = 120,label=&#39;Domestic\nTravel\nBan&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Sweden&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),
+                     labels = scales::comma,sec.axis = sec_axis(~.*40,labels = scales::comma)) </code></pre>
+<pre class="r"><code>france_1wave &lt;- covid_europe %&gt;% 
+  filter((location == &#39;France&#39;) &amp; (month(date) &lt; 9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-03-16&#39;), xmax = as.Date(&#39;2020-05-11&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-03-16&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  #ease of lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-05-11&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-04-10&#39;),y = 120,label=&#39;First\nLockdown&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;France&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),
+                     labels = scales::comma ,sec.axis = sec_axis(~.*40,labels = scales::comma)) </code></pre>
+<pre class="r"><code>denmark_1wave &lt;- covid_europe %&gt;% 
+  filter((location == &#39;Denmark&#39;) &amp; (month(date) &lt; 9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-03-13&#39;), xmax = as.Date(&#39;2020-05-15&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/40, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-03-13&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  #ease of lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-05-15&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-04-01&#39;),y = 120,label=&#39;First\nLockdown&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Denmark&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;) +
+  scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),labels = scales::comma ,sec.axis = sec_axis(~.*40,labels = scales::comma)) </code></pre>
+<pre class="r"><code>wave1 &lt;- ggarrange(uk_1wave, poland_1wave,italy_1wave, sweden_1wave, france_1wave, denmark_1wave,
+                   ncol = 2, 
+                   nrow = 3, 
+                   heights = c(0.3,0.3,0.3,0.3,0.3,0.3), widths = c(1,1,1,1,1,1),
+                   common.legend = TRUE, 
+                   legend= FALSE)
+
+title1 &lt;- expression(atop(bold(&quot;Hard and Fast Lockdowns Work, Gradual Responses Don&#39;t&quot;), # title
+                          scriptstyle(&quot;Daily Cases During the First Wave across the UK, Poland, Italy, Sweden, France and Denmark&quot;))) # subtitle
+
+annotate_figure(wave1,
+               top=text_grob(title1,size = 17),
+               left = text_grob(&quot;Daily Cases Per Million&quot;,rot = 90,color = &#39;blue&#39;,face = &#39;bold&#39;,size = 13),
+               right = text_grob(&quot;Daily Tests Per Million&quot;,rot = 90,color = &#39;orange&#39;,face = &#39;bold&#39;,size = 13))</code></pre>
+</div>
+<div id="plot-5b-wave-2---deep-dive-into-6-specific-case-studies-representing-characteristically-distinct-government-responses-to-the-pandemic" class="section level2">
+<h2>Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic</h2>
+<p><strong>Given that we wanted to evaluate government’s strategies holistically, we felt separating these deep-dive time-series into first and second waves, to allow identification both of how countries’ strategies evolved and direct comparison of their strategies in each wave, was optimal</strong></p>
+<pre class="r"><code>uk_2wave  &lt;- covid_europe %&gt;% 
+  filter((location == &#39;United Kingdom&#39;) &amp; (month(date)&gt;=9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-11-05&#39;), xmax = as.Date(&#39;2020-11-24&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line(aes(y = new_cases_smoothed_per_million, color = &#39;Daily Cases&#39;)) +
+  geom_line(aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  
+  # New restriction (Alert level introduced in UK)
+  geom_vline(xintercept = as.Date(&#39;2020-10-14&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  geom_vline(xintercept = as.Date(&#39;2020-11-05&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+   # Second lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-11-24&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;) +
+  
+  
+  annotate(geom =&quot;text&quot;, x = as.Date(&#39;2020-11-13&#39;),y = 1000, label=&#39;Second\nLockdown&#39;, color = &#39;black&#39;, size = 3.5) +
+  annotate(geom = &#39;text&#39;, x = as.Date(&#39;2020-10-23&#39;), y = 1000, label = &#39;New\nRestrictions&#39;, color = &#39;black&#39;, size = 3.5) + 
+ 
+  theme_fivethirtyeight() + 
+  labs(title = &#39;UK&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) +
+  scale_y_continuous(limits = c(0,1250),name = &#39;Daily Cases&#39;,labels = scales::comma,sec.axis = sec_axis(~.*10, name = &quot;Daily Tests&quot;,labels = scales::comma))</code></pre>
+<pre class="r"><code>poland_2wave&lt;- covid_europe %&gt;% 
+  filter(location == &#39;Poland&#39; &amp; month(date) &gt;= 9) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-11-07&#39;), xmax = as.Date(&#39;2020-11-21&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) + #divide daily tests by 2 in order not to distort graph
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+
+  #new restrictions
+  geom_vline(xintercept = as.Date(&#39;2020-10-24&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ #add dashed line
+  
+  #2nd lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-11-07&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+  geom_vline(xintercept = as.Date(&#39;2020-11-21&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-11-14&#39;),y = 1000,label=&#39;Second\nLockdown&#39;, size = 3.5) +
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-10-16&#39;),y = 1000,label=&#39;New\nRestrictions&#39;, size = 3.5) +
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Poland&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_y_continuous(limits = c(0,1250),labels = scales::comma ,sec.axis = sec_axis(~.*10, name = &quot;Daily Tests&quot;, labels = scales::comma)) + #multiply secondary axis by 2 in order to show actual results
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) </code></pre>
+<pre class="r"><code>italy_2wave&lt;- covid_europe %&gt;% 
+  filter(location == &#39;Italy&#39; &amp; month(date) &gt;= 9) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-11-06&#39;), xmax = as.Date(&#39;2020-11-22&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) + #divide daily tests by 2 in order not to distort graph
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+
+  #new restrictions
+  geom_vline(xintercept = as.Date(&#39;2020-10-25&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ #add dashed line
+  
+  #2nd lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-11-06&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+  geom_vline(xintercept = as.Date(&#39;2020-11-22&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-11-13&#39;),y = 1000,label=&#39;Second\nLockdown&#39;, size = 3.5) +
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-10-16&#39;),y = 1000,label=&#39;New\nRestrictions&#39;, size = 3.5) +
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Italy&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_y_continuous(limits = c(0,1250),labels = scales::comma ,sec.axis = sec_axis(~.*10, name = &quot;Daily Tests&quot;, labels = scales::comma)) + #multiply secondary axis by 2 in order to show actual results
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) </code></pre>
+<pre class="r"><code>sweden_2wave &lt;- covid_europe %&gt;% 
+  filter(location == &#39;Sweden&#39; &amp; month(date) &gt;= 9) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) + #divide daily tests by 2 in order not to distort graph
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+ 
+
+  #new restrictions
+  geom_vline(xintercept = as.Date(&#39;2020-10-09&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ #add dashed line
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-10-20&#39;),y = 1000,label=&#39;\nNew\nRestrictions&#39;, size = 3.5) +
+  
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Sweden&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_y_continuous(limits = c(0,1250),labels = scales::comma ,sec.axis = sec_axis(~.*10, name = &quot;Daily Tests&quot;, labels = scales::comma)) + #multiply secondary axis by 2 in order to show actual results
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) </code></pre>
+<pre class="r"><code>france_2wave &lt;- covid_europe %&gt;% 
+  filter((location == &#39;France&#39;) &amp; (month(date) &gt;= 9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_rect(aes(xmin = as.Date(&#39;2020-10-28&#39;), xmax = as.Date(&#39;2020-11-24&#39;), 
+                ymin = -Inf, ymax=Inf), fill = &#39;grey90&#39;) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;,&quot;orange&quot;)) +
+  
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-10-28&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  #ease of lockdown
+  geom_vline(xintercept = as.Date(&#39;2020-11-24&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+ 
+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-11-10&#39;),y = 1100,label=&#39;Second\nLockdown&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;France&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) +
+  scale_y_continuous(limits = c(0,1250),labels = scales::comma ,sec.axis = sec_axis(~.*10,labels = scales::comma)) </code></pre>
+<pre class="r"><code>denmark_2wave &lt;- covid_europe %&gt;% 
+  filter((location == &#39;Denmark&#39;) &amp; (month(date) &gt;= 9)) %&gt;% 
+  ggplot(aes(x = date)) +
+  geom_line( aes(y = new_cases_smoothed_per_million, colour = &quot;Daily Cases&quot;)) +
+  geom_line( aes(y = x7_day_daily_test_change_per_million/10, colour = &quot;Daily Tests&quot;)) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;orange&quot;)) +
+  
+  #lockdown line
+  geom_vline(xintercept = as.Date(&#39;2020-10-29&#39;), color = &#39;darkgrey&#39;, linetype = &#39;dashed&#39;)+
+  
+  
+ 
+  annotate(geom=&quot;text&quot;, x = as.Date(&#39;2020-11-7&#39;),y = 800,label=&#39;New\nRestrictions&#39;,size=3.5)+
+  
+  theme_fivethirtyeight() + 
+  labs(title = &#39;Denmark&#39;) +
+  theme(plot.title = element_text(size = 13, face = &quot;bold&quot;)) +
+  scale_x_date(labels = date_format(&quot;%m-%Y&quot;), date_breaks = &quot;month&quot;, 
+               limits = c(as.Date(&#39;2020-09-01&#39;),as.Date(&#39;2020-11-24&#39;))) +
+  scale_y_continuous(limits = c(0,1250),labels = scales::comma ,sec.axis = sec_axis(~.*10,labels = scales::comma)) </code></pre>
+<pre class="r"><code>wave2 &lt;- ggarrange(uk_2wave, poland_2wave,italy_2wave, sweden_2wave, france_2wave, denmark_2wave,
+                   ncol = 2, 
+                   nrow = 3, 
+                   heights = c(0.3,0.3,0.3,0.3,0.3,0.3), widths = c(1,1,1,1,1,1),
+                   common.legend = TRUE, 
+                   legend= FALSE)
+
+title2 &lt;- expression(atop(bold(&quot;Lesson Learnt? Countries who Imposed Restrictions Sooner Succeeded in Slowing the Second Wave&quot;), # title
+                          scriptstyle(&quot;Daily Cases During the Second Wave across the UK, Poland, Italy, Sweden, France and Denmark&quot;))) # subtitle
+
+annotate_figure(wave2,
+               top=text_grob(title2,size = 17),
+               left = text_grob(&quot;Daily Cases Per Million&quot;,rot = 90,color = &#39;blue&#39;,face = &#39;bold&#39;,size = 13),
+               right = text_grob(&quot;Daily Tests Per Million&quot;,rot = 90,color = &#39;orange&#39;,face = &#39;bold&#39;,size = 13))</code></pre>
+</div>
+<div id="plot-6---visualising-variable-importance-in-an-ols-linear-regression-model-predicting-cases-per-million" class="section level2">
+<h2>Plot 6 - Visualising Variable Importance in an OLS Linear Regression Model Predicting Cases per Million</h2>
+<p><strong>Since all our analyses so far (Plots 1-5) required us to draw non-empirical insights, we thought that it was crucial to ratify our insights with a statistical model</strong></p>
+<pre class="r"><code># create variables: days elapsed since day0
+country_day0 &lt;- 
+  covid_europe %&gt;% 
+  group_by(location) %&gt;% 
+  mutate(my_rank = order(date, decreasing = FALSE)) %&gt;% 
+  filter(my_rank == 1) %&gt;% 
+  select(c(location,date))
+
+covid_europe_lm &lt;- covid_europe %&gt;% 
+  left_join(country_day0,&#39;location&#39;) %&gt;% 
+  mutate(days_elapsed = as.numeric(date.x-date.y))</code></pre>
+<p>While Plots 1-4 are relatively self-explanatory, the Linear Regression used to create Plot 5 was tuned iteratively, selecting predictors and interactions which were both logically valid and resulted in an increase in Adjusted R2.</p>
+<pre class="r"><code>#Define control variables
+control &lt;- trainControl (
+    method=&quot;cv&quot;,
+    number=5,
+    verboseIter=TRUE) #by setting this to true the model will report its progress after each estimation
+
+#we are going to train the model and report the results using k-fold cross validation
+model1_lm&lt;-train(
+    total_cases_per_million~aged_65_older+
+            stringency_index:days_elapsed+stringency_index +
+           stringency_index:location
+           , data = covid_europe_lm,
+   method = &quot;lm&quot;,
+    trControl = control, na.action=na.exclude
+   )
+
+# summary of the results
+summary(model1_lm)</code></pre>
+<p>The resulting model equation is as follows:</p>
+<p>Total Cases Per Million = 0.0064 – 0.0451<em>Percentage Aged 65+ – 0.783</em>Stringency Index + 0.972<em>(Stringency Index</em>Days Elapsed) + B4<em>(Stringency Index</em>Location), where B4 is a coefficient representing the relationship between the stringency index and total cases per million, by location.</p>
+<p><strong>Since coefficients alone, especially for continuous-continuous interaction terms are not readily interpretable, we decide to plot relative factor importance instead - allowing us to evaluate whether our insights regarding SPEED of response, SEVERITY of stringency measures, and STABILITY of measures, are valid</strong></p>
+<p><strong>Further, this model allowed us to evaluate country-level heterogeneity in the efficacy of stringency measures, and the relative importance of stringency as a COVID-19 mitigation strategy across European countries</strong></p>
+<pre class="r"><code># we can check variable importance as well
+
+impt &lt;- varImp(model1_lm)$importance %&gt;% 
+  as.data.frame() %&gt;%
+  rownames_to_column() %&gt;%
+  arrange(desc(Overall)) %&gt;%
+  mutate(rowname = forcats::fct_inorder(rowname )) %&gt;% 
+  top_n(20)
+
+impt[1,3] &lt;- &#39;Stringency Index * Days Elapsed&#39;
+impt[2,3] &lt;- &#39;Stringency Index, for Luxembourg&#39;
+impt[3,3] &lt;- &#39;Stringency Index&#39;
+impt[4,3] &lt;- &#39;Stringency Index, for Belgium&#39;
+impt[5,3] &lt;- &#39;Stringency Index, for Belarus&#39;
+impt[6,3] &lt;- &#39;Stringency Index, for Spain&#39;
+impt[7,3] &lt;- &#39;Stringency Index, for Bosnia and Herzegovina&#39;
+impt[8,3] &lt;- &#39;Stringency Index, for Czech Republic&#39;
+impt[9,3] &lt;- &#39;Proportion 65+&#39;
+impt[10,3] &lt;- &#39;Stringency Index, for Bulgaria&#39;
+impt[11,3] &lt;- &#39;Stringency Index, for Switzerland&#39;
+impt[12,3] &lt;- &#39;Stringency Index, for Portugal&#39;
+impt[13,3] &lt;- &#39;Stringency Index, for Moldova&#39;
+impt[14,3] &lt;- &#39;Stringency Index, for Serbia&#39;
+impt[15,3] &lt;- &#39;Stringency Index, for Iceland&#39;
+impt[16,3] &lt;- &#39;Stringency Index, for Ireland&#39;
+impt[17,3] &lt;- &#39;Stringency Index, for Sweden&#39;
+impt[18,3] &lt;- &#39;Stringency Index, for Greece&#39;
+impt[19,3] &lt;- &#39;Stringency Index, for Poland&#39;
+impt[20,3] &lt;- &#39;Stringency Index, for Hungary&#39;
+
+
+
+impt %&gt;%   
+  ggplot() +
+    geom_col(aes(x = reorder(V3,(Overall)), y = Overall,fill = rowname))+
+    coord_flip() +
+    theme_bw() +
+    labs(title = &quot;Government Stringency is Most Effective in Preventing National Cases When Enacted Swiftly&quot;,
+         subtitle = &quot;Variable Importance in a Linear Regression Model Predicting Total Cases Per Million&quot;,
+         x = &quot;Variable&quot;,
+         y = &quot;Variable Importance&quot;) +
+  theme_fivethirtyeight() + 
+  theme(axis.text = element_text(size = 6),
+        plot.title = element_text(size=10,face = &#39;bold&#39;),
+        plot.subtitle = element_text(size=8),
+        axis.title = element_text(size=8)) +
+  scale_fill_manual(values = c(rep(&#39;red&#39; ,3),rep(&#39;grey&#39;,19))) +
+  theme(legend.title = element_blank()) +
+  theme(legend.position = &quot;none&quot;) </code></pre>
+</div>
+</div>

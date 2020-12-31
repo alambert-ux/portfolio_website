@@ -29,7 +29,7 @@ See my [interactive Tableau Dashboard](https://public.tableau.com/profile/albert
 
 This study asks the exploratory question "What have European governments done to mitigate the spread of COVID-19?", before asking the more pressing follow-up: "How successful have these measures been at limiting cases and fatalities, and what be learned from both the greatest successes and failures?". Employing a breadth of visual and statistical techniques, including spatial mapping, time-series analysis, and linear regression, we compare the success of European governments in containing the fall-out from the global COVID-19 pandemic.  
 
-Specifically, we provide answers to the questions:   
+**Specifically, we provide answers to the questions:**   
 
 **i.      WHERE have COVID-19 response strategies been successful?;**  
 
@@ -38,8 +38,6 @@ Specifically, we provide answers to the questions:
 **iii.	  WHICH factors are most important in determining the success of mitigation strategies and;**   
 
 **iv.     HOW does the theorised efficacy of mitigation strategies vary between countries?**     
-
-These analyses drive the conclusion that, though the efficacy of certain measures is highly country-specific, **stringent**, **stable** and **rapidly enacted (fast)** measures clearly predict how well national governments handled the crisis. Specifically, we find that the **timing** of government responses relative to the first nationwide outbreak (the first reported case) is the most important factor in determining their success in keeping cases down. This provides valuable lessons for governments as they battle the second and third waves of the pandemic and seek to overcome pandemics in future.   
 
 # The Data
 
@@ -54,37 +52,43 @@ https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-a
 testing data -> covid-testing-all-observations  
 https://github.com/owid/covid-19-data/blob/master/public/data/testing/covid-testing-all-observations.csv
 
-# Critiquing European Governments' COVID-19 Response Strategies
+# The Solution
 
-**OBJECTIVE 1** **Plots 1 & 2** Visualise the Current State of the COVID-19 Pandemic in Europe  
-
-*Outcomes:*                     Two Spatial Maps, Demonstrating Current Normalised Cases and Deaths Across Europe.  
-*Insights:*                     An understanding of how different European regions have experienced the crisis differently, allowing selection of key cases.    
-
-**OBJECTIVE 2** **Plots 3 & 4** Compare How Key European Countries Have Experienced the Pandemic in Terms of Cases and Deaths, and the Measures they Have Taken  
-
-*Outcomes:*                     Time Series Analyses Illustrating the Relationship between Stringency of Government Measures and subsequent cases/deaths.  
-*Insights:*                     Identification of countries where response strategies were and were not **i) Successful**, and selection of interesting cases.  
-
-**OBJECTIVE 3** **Plot 5**      Deep-Dive into Specific, Characteristically Distinct Government Responses to the Pandemic, selected using plots 3 and 4   
-
-*Outcomes:*                     Time Series Analyses Illustrating the Relationship between Cases, Tests, and Government Measures for Selected Cases from Plot 3.  
-*Insights:*                     Deeper understanding of the type of policies underlying the stringency index, and their relative **ii) efficacy** and timing.  
-
-
-**OBJECTIVE 4** **Plot 6**      Empirically ratify hypothesised relationships between certain factors and COVID-19 cases drawn from Plots 1-5,rank these factors by importance, and evaluate country-level heterogeneity   
-
-*Outcomes:*                     Ordinary Least Squares (OLS) Linear Regression Model Which Provides Both Factor Coefficient Estimates and Ranks Factor Importance.   
-*Insights:*                     Empirical relationships between government stringency (response) and outcomes, demonstrating: **iii) which factors are most important in determining success of mitigation strategies** and **iv) how the theorised efficacy of mitigation strategies vary between countries**.
-
+These analyses drive the conclusion that, though the efficacy of certain measures is highly country-specific, **stringent**, **stable** and **rapidly enacted (fast)** measures clearly predict how well national governments handled the crisis. Specifically, we find that the **timing** of government responses relative to the first nationwide outbreak (the first reported case) is the most important factor in determining their success in keeping cases down. This provides valuable lessons for governments as they battle the second and third waves of the pandemic and seek to overcome pandemics in future. 
 
 # **Analysis in R**
 
 ---
 
-## **A Visual Critique of European Government's COVID-19 Response Strategies**
+### OBJECTIVE 1 (Plots 1 and 2)  
+**Visualise the Current State of the COVID-19 Pandemic in Europe**  
 
-```{r, setup, include=FALSE}
+*Outcomes:*                     Two Spatial Maps, Demonstrating Current Normalised Cases and Deaths Across Europe.    
+
+*Insights:*                     An understanding of how different European regions have experienced the crisis differently, allowing selection of key cases.    
+
+### OBJECTIVE 2 (Plots 3 and 4)
+**Compare How Key European Countries Have Experienced the Pandemic in Terms of Cases and Deaths, and the Measures they Have Taken**   
+
+*Outcomes:*                     Time Series Analyses Illustrating the Relationship between Stringency of Government Measures and subsequent cases/deaths.   
+
+*Insights:*                     Identification of countries where response strategies were and were not *i) successful*, and selection of interesting cases.  
+
+### OBJECTIVE 3 (Plot 5)  
+**Deep-Dive into Specific, Characteristically Distinct Government Responses to the Pandemic, selected using plots 3 and 4**     
+
+*Outcomes:*                     Time Series Analyses Illustrating the Relationship between Cases, Tests, and Government Measures for Selected Cases from Plot 3.    
+
+*Insights:*                     Deeper understanding of the type of policies underlying the stringency index, and their relative *ii) efficacy* and timing.    
+
+### OBJECTIVE 4 (Plot 6) 
+**Empirically ratify hypothesised relationships between certain factors and COVID-19 cases drawn from Plots 1-5,rank these factors by importance, and evaluate country-level heterogeneity**  
+
+*Outcomes:*                     Ordinary Least Squares (OLS) Linear Regression Model Which Provides Both Factor Coefficient Estimates and Ranks Factor Importance.    
+
+*Insights:*                     Empirical relationships between government stringency (response) and outcomes, demonstrating: *iii) which factors are most important in determining success of mitigation strategies* and *iv) how the efficacy of mitigation strategies vary between countries*.  
+
+```{r, setup, include=FALSE} 
 knitr::opts_chunk$set(
   message = FALSE, 
   warning = FALSE, 
@@ -98,9 +102,11 @@ knitr::opts_chunk$set(
   fig.height=5,
   fig.align = "left"
 )
-```
 
-# Load Necessary Libraries
+#all chunks are shown, but not run: only the figures outputted are shown to reduce computational burden
+knitr::opts_chunk$set(eval = FALSE,cache=FALSE)
+
+```
 
 ```{r, load_libraries, include = FALSE}
 library(readr) #load dataset
@@ -506,6 +512,11 @@ map_total
 
 ```
 
+```{r plot01, eval=TRUE, include=TRUE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig01.png")
+
+```
 ## Plot 2 - Map of COVID-19 Cases Across Europe, by Wave
 
 **Designed to Demonstrate how the First and Second Waves Hit Different Countries Differently - to Inform Our Case-Study Selection**
@@ -589,7 +600,7 @@ map_lockdowns
 
 **Designed in order to demonstrate, temporally, the relationship between government stringency measures and cases**
 
-```{r stringency_cases,fig.height = 3,fig.width = 6,message=FALSE,results='hide',warning=FALSE}
+```{r stringency_cases,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE}
 #(1) New Cases Smoothed, Per Million
 
 coeff=12
@@ -620,11 +631,11 @@ cases_stringency
 
 ```
 
-## Plot 4: Investigating the relationship between stringency measures and deaths for prominent European countries
+## Plot 4 - Investigating the relationship between stringency measures and deaths for prominent European countries
 
 **Designed in order to demonstrate, temporally, the relationship between government stringency measures and deaths, since we speculated cases may be misleading as an indicator of government response efficacy in the first wave, due to lack of testing**
 
-```{r stringency_deaths,fig.height = 3,fig.width = 6,message=FALSE,results='hide',warning=FALSE}
+```{r stringency_deaths,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE}
 # (2) New Deaths Smoothed, Per Million
 
 coeff=5
@@ -654,12 +665,11 @@ death_stringency <- covid_europe %>%
   theme(legend.position="top") +
   theme(plot.subtitle = element_markdown()) 
 
-
-
 death_stringency
+
 ```
 
-## Plot 5a (Wave 1): Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
+## Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
 **Again, we designed these visualisations as time-series, since Plots 3 and 4 demonstrated to us that timing, as well as stringency, seemed to be strongly related to outcomes in terms of cases and deaths**
 
@@ -855,7 +865,7 @@ denmark_1wave <- covid_europe %>%
   scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),labels = scales::comma ,sec.axis = sec_axis(~.*40,labels = scales::comma)) 
 ```
 
-```{r wave1_countries,fig.height= 4,fig.width=7,message=FALSE,results='hide',warning=FALSE}
+```{r wave1_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE}
 wave1 <- ggarrange(uk_1wave, poland_1wave,italy_1wave, sweden_1wave, france_1wave, denmark_1wave,
                    ncol = 2, 
                    nrow = 3, 
@@ -873,7 +883,7 @@ annotate_figure(wave1,
 
 ```
 
-## Plot 5b (Wave 2): Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
+## Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
 **Given that we wanted to evaluate government's strategies holistically, we felt separating these deep-dive time-series into first and second waves, to allow identification both of how countries' strategies evolved and direct comparison of their strategies in each wave, was optimal**
 
@@ -903,7 +913,6 @@ uk_2wave  <- covid_europe %>%
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "month", 
                limits = c(as.Date('2020-09-01'),as.Date('2020-11-24'))) +
   scale_y_continuous(limits = c(0,1250),name = 'Daily Cases',labels = scales::comma,sec.axis = sec_axis(~.*10, name = "Daily Tests",labels = scales::comma))
-
 
 
 ```
@@ -1044,7 +1053,7 @@ denmark_2wave <- covid_europe %>%
 
 ```
 
-```{r wave2_countries,fig.height= 4,fig.width=7,message=FALSE,results='hide',warning=FALSE}
+```{r wave2_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE}
 wave2 <- ggarrange(uk_2wave, poland_2wave,italy_2wave, sweden_2wave, france_2wave, denmark_2wave,
                    ncol = 2, 
                    nrow = 3, 
@@ -1115,7 +1124,7 @@ Total Cases Per Million = 0.0064 – 0.0451*Percentage Aged 65+ – 0.783*String
 
 **Further, this model allowed us to evaluate country-level heterogeneity in the efficacy of stringency measures, and the relative importance of stringency as a COVID-19 mitigation strategy across European countries**
 
-```{r LR Model Variable Importance,fig.height = 2,fig.width = 4,message=FALSE,results='hide',warning=FALSE}
+```{r LR Model Variable Importance,fig.height = 6,fig.width = 7,message=FALSE,results='hide',warning=FALSE}
 
 # we can check variable importance as well
 
@@ -1166,10 +1175,5 @@ impt %>%
   scale_fill_manual(values = c(rep('red' ,3),rep('grey',19))) +
   theme(legend.title = element_blank()) +
   theme(legend.position = "none") 
-
-
-
-
-
 
 ```
