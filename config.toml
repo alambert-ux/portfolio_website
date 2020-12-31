@@ -20,7 +20,7 @@ disqusShortname = ""
 
   # Provide your metadata here.
   name = "Alberto Lambert"
-  description = "Personal Portfolio Website"
+  description = "Portfolio"
 
   # Link custom assets relative to /static
   custom_css = []
