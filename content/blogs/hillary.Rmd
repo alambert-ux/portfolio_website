@@ -2,7 +2,7 @@
 date: "2017-10-31T21:28:43-05:00"
 description: "AirBnB Analytics | A Deep-Dive into Copenhagen's Holiday Rental Market"
 draft: false
-image: pic06.jpg
+image: pic06.jpg 
 keywords: ""
 slug: hillary
 title: Hillary
@@ -90,8 +90,6 @@ knitr::opts_chunk$set(
 
 # Loading Data
 
-As first step we load the required packages for all stages of our analysis. 
-
 ```{r load-libraries, echo=FALSE, show=FALSE, messages=FALSE, warnings=FALSE}
 library(Rmisc) 
 library(mosaic)
@@ -123,9 +121,9 @@ library(car)
 library(huxtable)
 ```
 
-Next, we load in the Copenhagen AirBnB data, which has been scraped from the AirBnB website using vroom, which is a package allowing for fast reading of large datasets such as ours. We also clean the variable names as we import the data, to allow us to push on with our EDA without extensive renaming. 
+First, we load in the Copenhagen AirBnB data, which has been scraped from the AirBnB website using vroom, which is a package allowing for fast reading of large datasets such as ours. We also clean the variable names as we import the data, to allow us to push on with our EDA without extensive renaming. 
 
-```{r loading_data_copenhagen, echo=FALSE, show=FALSE, messages=FALSE, warnings=FALSE}
+```{r loading_data_copenhagen, messages=FALSE, warnings=FALSE, results='hide'}
 
 #we use vroom to load the data directly from the AirBnB Website and it is faster than reads::read_csv
 listings <- vroom("http://data.insideairbnb.com/denmark/hovedstaden/copenhagen/2020-06-26/data/listings.csv.gz") %>% 

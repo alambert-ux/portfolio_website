@@ -16,7 +16,7 @@ title: Nightingale
 **Note:** *this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.*
 
 ---
-
+ 
 # Executive Summary  
 
 See [this Presentation Deck](https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing "A Visual Critique of European Government's COVID-19 Response Strategies") for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
