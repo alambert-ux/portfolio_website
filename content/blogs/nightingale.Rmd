@@ -160,7 +160,7 @@ library(rnaturalearth)
 
 # Load Data
 
-```{r loading_data, eval=FALSE}
+```{r loading_data}
 #loading first data set, incl. GDP
 owid_covid_data <- read_csv(here::here('data','owid-covid-data.csv'))
 #cleaning the names
@@ -190,11 +190,11 @@ We start with the `covid_data`, which has 48 covid-related indicators of a count
 * 17 completely empty columns 
 * Incompleteness in almost all columns
 
-```{r dataset1 skim, message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset1 skim, message=FALSE,results='hide',warning=FALSE}
 skim(covid_data)
 ```
 
-```{r dataset1 remove duplicates and empties,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset1 remove duplicates and empties,message=FALSE,results='hide',warning=FALSE}
 #check for duplicates
 covid_data %>% get_dupes(date, iso_code) # no duplicates 
 #Remove empty columns and rows
@@ -203,7 +203,7 @@ covid_data_clean <- remove_empty(covid_data, which = c("rows","cols")) # 17 colu
 
 We start to clean each columns. We can see there are some rows with `location = International`which makes our `iso_code` NA. Since our analysis mainly focus on each countries, we will delete these rows. For the `continent` variable, we found that its NA come from`location = 'World'`, which is actually derivable from other rows, thus we will delete them.
 
-```{r dataset1 clean iso_code and continent,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset1 clean iso_code and continent,message=FALSE,results='hide',warning=FALSE}
 # NAs in iso_code
 head(covid_data_clean[is.na(covid_data$iso_code),])
 # delete them
@@ -217,7 +217,7 @@ covid_data_clean <- covid_data_clean %>%
 
 For the `gdp_per_capita` column, there are 28 countries/territories with missing values. And they are missing across all the days. We impute some of them, with data from world bank if it is availble, and leave the rest in NAs
 
-```{r dataset1 clean gdp_per_capita,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset1 clean gdp_per_capita,message=FALSE,results='hide',warning=FALSE}
 # check if the gdp_per_capita of countries are NA all the time 
 covid_data_clean %>% 
   filter(is.na(gdp_per_capita)) %>% 
@@ -240,13 +240,13 @@ skim(covid_data_clean)
 ```
 ##  Dataset 2: Hospital Data
 
-```{r dataset2 skim,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset2 skim,message=FALSE,results='hide',warning=FALSE}
 skim(hospital_data)
 ```
 
 We remove all rows with no indicator as we don't know what it would stand for in cases where `indicator` = NA, similarly we remove rows with NA in `value`
 
-```{r dataset2 clean indicator and value,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r dataset2 clean indicator and value,message=FALSE,results='hide',warning=FALSE}
 hospital_data_clean <- hospital_data %>%
   filter(!is.na(indicator))
 hospital_data_clean <- hospital_data_clean %>%
@@ -255,7 +255,7 @@ hospital_data_clean <- hospital_data_clean %>%
 
 We then deselect some columns and pivot hospital data to a clean format
 
-```{r clean data format,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r clean data format,message=FALSE,results='hide',warning=FALSE}
 
 hospital_data_clean <- hospital_data_clean %>% 
   pivot_wider(names_from=indicator, values_from=value) %>% 
@@ -273,7 +273,7 @@ hospital_data_clean %>% get_dupes(date, country) # no duplicates
 
 We explore the dataset...
 
-```{r explore testing,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r explore testing,message=FALSE,results='hide',warning=FALSE}
 skim(covid_testing)
 
 # we can drop a few variables such as source_url, source_label and note
@@ -293,7 +293,7 @@ covid_testing_process %>%
 ```
 As we can observe there are two metrics: people tested and samples tested. Having browsed the source of the dataset we are not able to conclude which data is correct, thus we are going to take daily average for specific dates.   
 
-```{r clean testing,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r clean testing,message=FALSE,results='hide',warning=FALSE}
 
 #average daily data per country and omit na's
 
@@ -318,7 +318,7 @@ covid_testing_process1 %>%
 
 ## Merging the 3 Datasets into 1
 
-```{r merge dataset,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r merge dataset,message=FALSE,results='hide',warning=FALSE}
 
 #rename columns in hospital dataset in order to join datasets
 
@@ -339,7 +339,7 @@ skim(covid_total)
 
 We observe that there are still quite a few missing values, however we are going to focus on Europe in our analysis.
 
-```{r select europe,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r select europe,message=FALSE,results='hide',warning=FALSE}
 #filter for European countries
 
 unique(covid_total$continent)
@@ -360,7 +360,7 @@ We are going to enrich the dataset by defining the following variables:
 - day0_deaths_elapsed -> days elapsed from day_0_deaths  
 - day0_difference -> days elapsed between daily cases first hit 1000 and daily deaths 100
 
-```{r enriching the dataset,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r enriching the dataset,message=FALSE,results='hide',warning=FALSE}
 
 ##days elapsed since daily cases exceeded 1000 for the first time
 
@@ -441,7 +441,7 @@ We begin by setting the scene of the 'state of COVID=19' in Europe, before explo
 
 **Designed to demonstrate the current state of the COVID-19 Pandemic in Europe and inform further avenues of inquiry**
 
-```{r top 5 sum new_cases countries,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r top 5 sum new_cases countries,message=FALSE,results='hide',warning=FALSE}
 top_5_country <- covid_europe %>% 
   group_by(location) %>% 
   summarise(sum = sum(new_cases_per_million)) %>% 
@@ -452,7 +452,7 @@ top_5_country <- covid_europe %>%
 # Top 5 countries with most cases are France, Russia, Spain, United Kingdom and Italy
 ```
 
-```{r mapping,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r mapping,message=FALSE,results='hide',warning=FALSE}
 
 # combine map with covid european data at the most recent date
 covid_europe_lateset <- covid_europe %>% 
@@ -512,7 +512,7 @@ map_total
 
 ```
 
-```{r plot01, eval=TRUE, include=TRUE, fig.show=TRUE, eval=TRUE} 
+```{r plot01, eval=TRUE, include=FALSE, fig.show=TRUE}
 
 knitr::include_graphics("images/fig01.png")
 
@@ -523,7 +523,7 @@ knitr::include_graphics("images/fig01.png")
 
 **Designed to Demonstrate how the First and Second Waves Hit Different Countries Differently - to Inform Our Case-Study Selection**
 
-``` {r lockdown_maps,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+``` {r lockdown_maps,message=FALSE,results='hide',warning=FALSE}
 
 # combine map with covid european data at the most recent date
 covid_europe_lateset1 <- covid_europe %>% 
@@ -590,7 +590,7 @@ map_total_lockdown2 <- euro_joined2 %>%
 
 ```
 
-```{r combine_lockdown_maps, fig.height = 10,fig.width = 10,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r combine_lockdown_maps, fig.height = 10,fig.width = 10,message=FALSE,results='hide',warning=FALSE}
 map_lockdowns <- ggarrange(map_total_lockdown1, map_total_lockdown2, 
                     ncol = 2, nrow = 1,
                     heights = c(0.7,0.7), widths = c(1,1))
@@ -598,11 +598,17 @@ map_lockdowns
 
 ```
 
+```{r plot02, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig02.png")
+
+```
+
 ## Plot 3 - Investigating the relationship between stringency measures and cases for prominent European countries
 
 **Designed in order to demonstrate, temporally, the relationship between government stringency measures and cases**
 
-```{r stringency_cases,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r stringency_cases,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE}
 #(1) New Cases Smoothed, Per Million
 
 coeff=12
@@ -633,11 +639,17 @@ cases_stringency
 
 ```
 
+```{r plot03, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig03.png")
+
+```
+
 ## Plot 4 - Investigating the relationship between stringency measures and deaths for prominent European countries
 
 **Designed in order to demonstrate, temporally, the relationship between government stringency measures and deaths, since we speculated cases may be misleading as an indicator of government response efficacy in the first wave, due to lack of testing**
 
-```{r stringency_deaths,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r stringency_deaths,fig.height = 5,fig.width = 10,message=FALSE,results='hide',warning=FALSE}
 # (2) New Deaths Smoothed, Per Million
 
 coeff=5
@@ -671,13 +683,19 @@ death_stringency
 
 ```
 
+```{r plot04, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig04.png")
+
+```
+
 ## Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
 **Again, we designed these visualisations as time-series, since Plots 3 and 4 demonstrated to us that timing, as well as stringency, seemed to be strongly related to outcomes in terms of cases and deaths**
 
 **Given that we also observe substantial differences in the stories told by Cases and Deaths in the first wave, in plots 3 and 4, we also thought it important to include COVID-19 testing data, to ensure that though we were evaluating case evolution, we were weary of the biases associated with different levels of national testing**
 
-```{r daily_test_change,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r daily_test_change,message=FALSE,results='hide',warning=FALSE}
 covid_europe <- covid_europe %>% 
   mutate(x7_day_daily_test_change_per_million = x7_day_daily_test_change_per_thousand*1000)
 covid_europe %>% 
@@ -685,7 +703,7 @@ covid_europe %>%
   select(new_cases_per_million,x7_day_daily_test_change_per_million)
 ```
 
-```{r uk_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r uk_1wave,message=FALSE,results='hide',warning=FALSE}
 uk_1wave <- covid_europe %>% 
   # to create first wave, we filter the month
   filter(location == 'United Kingdom' & month(date)<9 & month(date)>1) %>% 
@@ -722,7 +740,7 @@ uk_1wave <- covid_europe %>%
 
 ```
 
-```{r poland_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r poland_1wave,message=FALSE,results='hide',warning=FALSE}
 poland_1wave <- covid_europe %>% 
   filter(location == 'Poland' & month(date) < 9) %>% 
   ggplot(aes(x = date)) +
@@ -748,7 +766,7 @@ poland_1wave <- covid_europe %>%
 
 ```
 
-```{r italy_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r italy_1wave,message=FALSE,results='hide',warning=FALSE}
 italy_1wave <- covid_europe %>% 
   # to create first wave, we filter the month
   filter(location == 'Italy' & month(date)<9 & month(date)>1) %>% 
@@ -788,7 +806,7 @@ italy_1wave <- covid_europe %>%
   
 ```
 
-```{r sweden_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r sweden_1wave,message=FALSE,results='hide',warning=FALSE}
 sweden_1wave <- covid_europe %>% 
   filter((location == 'Sweden') & (month(date) < 9)) %>% 
   ggplot(aes(x = date)) +
@@ -814,7 +832,7 @@ sweden_1wave <- covid_europe %>%
 
 ```
 
-```{r france_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r france_1wave,message=FALSE,results='hide',warning=FALSE}
 france_1wave <- covid_europe %>% 
   filter((location == 'France') & (month(date) < 9)) %>% 
   ggplot(aes(x = date)) +
@@ -842,7 +860,7 @@ france_1wave <- covid_europe %>%
 
 ```
 
-```{r denmark_1wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r denmark_1wave,message=FALSE,results='hide',warning=FALSE}
 denmark_1wave <- covid_europe %>% 
   filter((location == 'Denmark') & (month(date) < 9)) %>% 
   ggplot(aes(x = date)) +
@@ -867,7 +885,7 @@ denmark_1wave <- covid_europe %>%
   scale_y_continuous(limits = c(0,160),breaks = c(0,40,80,120,160),labels = scales::comma ,sec.axis = sec_axis(~.*40,labels = scales::comma)) 
 ```
 
-```{r wave1_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r wave1_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE}
 wave1 <- ggarrange(uk_1wave, poland_1wave,italy_1wave, sweden_1wave, france_1wave, denmark_1wave,
                    ncol = 2, 
                    nrow = 3, 
@@ -885,11 +903,17 @@ annotate_figure(wave1,
 
 ```
 
+```{r plot05a, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig05a.png")
+
+```
+
 ## Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
 **Given that we wanted to evaluate government's strategies holistically, we felt separating these deep-dive time-series into first and second waves, to allow identification both of how countries' strategies evolved and direct comparison of their strategies in each wave, was optimal**
 
-```{r uk_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r uk_2wave,message=FALSE,results='hide',warning=FALSE}
 uk_2wave  <- covid_europe %>% 
   filter((location == 'United Kingdom') & (month(date)>=9)) %>% 
   ggplot(aes(x = date)) +
@@ -919,7 +943,7 @@ uk_2wave  <- covid_europe %>%
 
 ```
 
-```{r poland_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r poland_2wave,message=FALSE,results='hide',warning=FALSE}
 poland_2wave<- covid_europe %>% 
   filter(location == 'Poland' & month(date) >= 9) %>% 
   ggplot(aes(x = date)) +
@@ -949,8 +973,7 @@ poland_2wave<- covid_europe %>%
 
 ```
 
-
-```{r italy_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r italy_2wave,message=FALSE,results='hide',warning=FALSE}
 italy_2wave<- covid_europe %>% 
   filter(location == 'Italy' & month(date) >= 9) %>% 
   ggplot(aes(x = date)) +
@@ -981,7 +1004,7 @@ italy_2wave<- covid_europe %>%
 
 ```
 
-```{r sweden_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r sweden_2wave,message=FALSE,results='hide',warning=FALSE}
 sweden_2wave <- covid_europe %>% 
   filter(location == 'Sweden' & month(date) >= 9) %>% 
   ggplot(aes(x = date)) +
@@ -1004,7 +1027,7 @@ sweden_2wave <- covid_europe %>%
 
 ```
 
-```{r france_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r france_2wave,message=FALSE,results='hide',warning=FALSE}
 france_2wave <- covid_europe %>% 
   filter((location == 'France') & (month(date) >= 9)) %>% 
   ggplot(aes(x = date)) +
@@ -1031,7 +1054,7 @@ france_2wave <- covid_europe %>%
 
 ```
 
-```{r denmark_2wave,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r denmark_2wave,message=FALSE,results='hide',warning=FALSE}
 denmark_2wave <- covid_europe %>% 
   filter((location == 'Denmark') & (month(date) >= 9)) %>% 
   ggplot(aes(x = date)) +
@@ -1055,7 +1078,7 @@ denmark_2wave <- covid_europe %>%
 
 ```
 
-```{r wave2_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r wave2_countries,fig.height= 6,fig.width=12,message=FALSE,results='hide',warning=FALSE}
 wave2 <- ggarrange(uk_2wave, poland_2wave,italy_2wave, sweden_2wave, france_2wave, denmark_2wave,
                    ncol = 2, 
                    nrow = 3, 
@@ -1074,11 +1097,17 @@ annotate_figure(wave2,
 
 ```
 
+```{r plot05b, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig05b.png")
+
+```
+
 ## Plot 6 - Visualising Variable Importance in an OLS Linear Regression Model Predicting Cases per Million
 
 **Since all our analyses so far (Plots 1-5) required us to draw non-empirical insights, we thought that it was crucial to ratify our insights with a statistical model**
 
-```{r defining variables,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r defining variables,message=FALSE,results='hide',warning=FALSE}
 
 # create variables: days elapsed since day0
 country_day0 <- 
@@ -1096,7 +1125,7 @@ covid_europe_lm <- covid_europe %>%
 
 While Plots 1-4 are relatively self-explanatory, the Linear Regression used to create Plot 5 was tuned iteratively, selecting predictors and interactions which were both logically valid and resulted in an increase in Adjusted R2. 
 
-```{r define control variable,message=FALSE,results='hide',warning=FALSE, eval=FALSE}
+```{r define control variable,message=FALSE,results='hide',warning=FALSE}
 #Define control variables
 control <- trainControl (
     method="cv",
@@ -1177,5 +1206,11 @@ impt %>%
   scale_fill_manual(values = c(rep('red' ,3),rep('grey',19))) +
   theme(legend.title = element_blank()) +
   theme(legend.position = "none") 
+
+```
+
+```{r plot06, eval=TRUE, include=FALSE, fig.show=TRUE}
+
+knitr::include_graphics("images/fig06.png")
 
 ```
