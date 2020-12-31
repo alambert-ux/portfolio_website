@@ -9,7 +9,7 @@ title: Hillary
 
 ---
 
-# **Airbnb Analytics**
+# **Airbnb Analytics** 
 
 ## **A Deep-Dive into Copenhagen's Holiday Rental Market**
 
@@ -69,8 +69,6 @@ In summary, our "best", or optimal, model was generated via the following core s
 # **Analysis in R**
 
 ---
-
-## **A Deep-Dive into Copenhagen's Holiday Rental Market**
 
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(

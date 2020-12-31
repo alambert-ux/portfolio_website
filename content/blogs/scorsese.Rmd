@@ -9,7 +9,7 @@ title: Scorsese
 
 ---
 
-# **What Clusters of BBC iPlayer Users Exist and How Can We Recommend them Suitable Films?**
+# **What Clusters of Users Exist and How Can We Recommend them Suitable Films?**
 
 ## **Applying Unsupervised Machine Learning Approaches to Segment Users and Recommend Movies**
 
@@ -91,7 +91,7 @@ library(Hmisc)
 library(factoextra)
 library(purrr)
 library(gridExtra)
-library(skimr)
+library(skimr) 
 library(ggthemes)
 library(patchwork) 
 library(rsample)

@@ -100,7 +100,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-#Load Necessary Libraries
+# Load Necessary Libraries
 
 ```{r, load_libraries, include = FALSE}
 library(readr) #load dataset

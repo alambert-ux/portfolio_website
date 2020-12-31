@@ -9,9 +9,9 @@ title: Buffett
 
 ---
 
-# **This Place Costs That Much?**
+# **This Place Costs That Much?** 
 
-## **Applying Ensemble Methods to Predict London House Prices**
+## **Applying Ensemble Methods to Predict London House Prices** 
 
 ---
 
@@ -59,7 +59,7 @@ load(here::here('data','FinalEnvironment.RData'))
 
 ```
 
-```{r, load_libraries, include = FALSE}
+```{r, load_libraries, include = FALSE} 
 
 #I begin by loading in all the necessary libraries
 
@@ -577,7 +577,7 @@ I decide to proceed with all variables in the final_equation specification for m
 4. re-run the model using only the most important variables identified and tune its parameters
 5. evaluate the performance of this model, and select it as the final specification IF it performs better than the version run on final_equation
 
-## Model 1 - LASSO Linear Regression Model
+## Model 1 - LASSO Linear Regression Model  
 
 I now run a comprehensive LASSO linear regression model, containing all predictors in the final_equation above. The LASSO specification is used for further feature selection. 
 
