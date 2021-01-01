@@ -11,9 +11,9 @@ title: Nightingale
 
 # **"No Need to Panic, It's All Under Control..."**  
 
-## **A Visual Critique of European Government's COVID-19 Response Strategiess**
+## **A Visual Critique of European Government's COVID-19 Response Strategies**
 
-**Note:** *this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.*
+**Note:** *this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.* 
 
 ---
  
@@ -512,12 +512,7 @@ map_total
 
 ```
 
-```{r plot01, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig01.png")
-
-```
-  
+![](images/fig01.png) 
   
 ## Plot 2 - Map of COVID-19 Cases Across Europe, by Wave
 
