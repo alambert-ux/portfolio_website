@@ -377,7 +377,7 @@ map_total &lt;- euro_joined %&gt;%
         legend.text = element_text(size = 7))
 
 map_total</code></pre>
-<p><img src="images/fig01.png" /></p>
+<p><img src="/blogs/nightingale_files/fig01.png" /></p>
 </div>
 <div id="plot-2---map-of-covid-19-cases-across-europe-by-wave" class="section level2">
 <h2>Plot 2 - Map of COVID-19 Cases Across Europe, by Wave</h2>
@@ -443,6 +443,7 @@ map_total_lockdown2 &lt;- euro_joined2 %&gt;%
                     ncol = 2, nrow = 1,
                     heights = c(0.7,0.7), widths = c(1,1))
 map_lockdowns</code></pre>
+<p><img src="/blogs/nightingale_files/fig02.png" /></p>
 </div>
 <div id="plot-3---investigating-the-relationship-between-stringency-measures-and-cases-for-prominent-european-countries" class="section level2">
 <h2>Plot 3 - Investigating the relationship between stringency measures and cases for prominent European countries</h2>
@@ -474,6 +475,7 @@ cases_stringency &lt;- covid_europe %&gt;%
   theme(plot.subtitle = element_markdown()) 
  
 cases_stringency</code></pre>
+<p><img src="/blogs/nightingale_files/fig03.png" /></p>
 </div>
 <div id="plot-4---investigating-the-relationship-between-stringency-measures-and-deaths-for-prominent-european-countries" class="section level2">
 <h2>Plot 4 - Investigating the relationship between stringency measures and deaths for prominent European countries</h2>
@@ -508,6 +510,7 @@ death_stringency &lt;- covid_europe %&gt;%
   theme(plot.subtitle = element_markdown()) 
 
 death_stringency</code></pre>
+<p><img src="/blogs/nightingale_files/fig04.png" /></p>
 </div>
 <div id="plot-5a-wave-1---deep-dive-into-6-specific-case-studies-representing-characteristically-distinct-government-responses-to-the-pandemic" class="section level2">
 <h2>Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic</h2>
@@ -687,6 +690,7 @@ annotate_figure(wave1,
                top=text_grob(title1,size = 17),
                left = text_grob(&quot;Daily Cases Per Million&quot;,rot = 90,color = &#39;blue&#39;,face = &#39;bold&#39;,size = 13),
                right = text_grob(&quot;Daily Tests Per Million&quot;,rot = 90,color = &#39;orange&#39;,face = &#39;bold&#39;,size = 13))</code></pre>
+<p><img src="/blogs/nightingale_files/fig05a.png" /></p>
 </div>
 <div id="plot-5b-wave-2---deep-dive-into-6-specific-case-studies-representing-characteristically-distinct-government-responses-to-the-pandemic" class="section level2">
 <h2>Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic</h2>
@@ -842,6 +846,7 @@ annotate_figure(wave2,
                top=text_grob(title2,size = 17),
                left = text_grob(&quot;Daily Cases Per Million&quot;,rot = 90,color = &#39;blue&#39;,face = &#39;bold&#39;,size = 13),
                right = text_grob(&quot;Daily Tests Per Million&quot;,rot = 90,color = &#39;orange&#39;,face = &#39;bold&#39;,size = 13))</code></pre>
+<p><img src="/blogs/nightingale_files/fig05b.png" /></p>
 </div>
 <div id="plot-6---visualising-variable-importance-in-an-ols-linear-regression-model-predicting-cases-per-million" class="section level2">
 <h2>Plot 6 - Visualising Variable Importance in an OLS Linear Regression Model Predicting Cases per Million</h2>
@@ -929,5 +934,6 @@ impt %&gt;%
   scale_fill_manual(values = c(rep(&#39;red&#39; ,3),rep(&#39;grey&#39;,19))) +
   theme(legend.title = element_blank()) +
   theme(legend.position = &quot;none&quot;) </code></pre>
+<p><img src="/blogs/nightingale_files/fig06.png" /></p>
 </div>
 </div>

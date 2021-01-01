@@ -512,8 +512,9 @@ map_total
 
 ```
 
-![](images/fig01.png) 
-  
+![](/blogs/nightingale_files/fig01.png)
+
+
 ## Plot 2 - Map of COVID-19 Cases Across Europe, by Wave
 
 **Designed to Demonstrate how the First and Second Waves Hit Different Countries Differently - to Inform Our Case-Study Selection**
@@ -593,11 +594,7 @@ map_lockdowns
 
 ```
 
-```{r plot02, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig02.png")
-
-```
+![](/blogs/nightingale_files/fig02.png)
 
 ## Plot 3 - Investigating the relationship between stringency measures and cases for prominent European countries
 
@@ -634,11 +631,7 @@ cases_stringency
 
 ```
 
-```{r plot03, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig03.png")
-
-```
+![](/blogs/nightingale_files/fig03.png)
 
 ## Plot 4 - Investigating the relationship between stringency measures and deaths for prominent European countries
 
@@ -678,11 +671,7 @@ death_stringency
 
 ```
 
-```{r plot04, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig04.png")
-
-```
+![](/blogs/nightingale_files/fig04.png)
 
 ## Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
@@ -898,11 +887,7 @@ annotate_figure(wave1,
 
 ```
 
-```{r plot05a, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig05a.png")
-
-```
+![](/blogs/nightingale_files/fig05a.png)
 
 ## Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
@@ -1092,11 +1077,7 @@ annotate_figure(wave2,
 
 ```
 
-```{r plot05b, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig05b.png")
-
-```
+![](/blogs/nightingale_files/fig05b.png)
 
 ## Plot 6 - Visualising Variable Importance in an OLS Linear Regression Model Predicting Cases per Million
 
@@ -1204,8 +1185,4 @@ impt %>%
 
 ```
 
-```{r plot06, eval=TRUE, include=FALSE, fig.show=TRUE}
-
-knitr::include_graphics("images/fig06.png")
-
-```
+![](/blogs/nightingale_files/fig06.png)
