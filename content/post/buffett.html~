@@ -1,0 +1,1374 @@
+<script src="buffett_files/header-attrs/header-attrs.js"></script>
+
+
+<div id="this-place-costs-that-much" class="section level1">
+<h1><strong>This Place Costs That Much?</strong></h1>
+<div id="applying-ensemble-methods-to-predict-london-house-prices" class="section level2">
+<h2><strong>Applying Ensemble Methods to Predict London House Prices</strong></h2>
+<hr />
+</div>
+</div>
+<div id="executive-summary" class="section level1">
+<h1>Executive Summary</h1>
+<p>The full report of this project can be viewed as a PDF <a href="https://drive.google.com/file/d/1-TaxOB3piOGm94pPR-RFQz3JoF2mvcPH/view?usp=sharing" title="This Place Costs That Much? Applying Ensemble Methods to Predict London House Prices">here</a>.</p>
+</div>
+<div id="the-problem" class="section level1">
+<h1>The Problem</h1>
+<p>London is the 8th most expensive city in the world to buy property. Yet, the emergence of new “hot spots” as the city and its transport networks expand means that its property market still promises ample investment opportunities. I seek to answer the questions “Which 200 London properties should I buy to maximize profit?”, and “How can profit opportunities be identified in neighborhoods served by Crossrail?”.</p>
+<p>Seeking to build a maximally profitable property portfolio and evaluate whether Crossrail promises further profit opportunities for nearby property-holders, I provide a comprehensive methodology for the specification, optimization, application of an ensemble model designed to predict London house prices.</p>
+</div>
+<div id="the-data" class="section level1">
+<h1>The Data</h1>
+<p>Throughout these analyses, two key datasets are utilised: the first, an in-sample datasets containing 36 variables representing house price characteristics, as well as the final sale price of the property; and the second, an out-of-sample dataset containing 36 (non-identical) variables, including the property’s asking price - but not its final sale price.</p>
+<p>See <a href="https://public.tableau.com/profile/alberto7149#!/vizhome/LondonHousePricesStorytelling/ComparingtheImpactsofthe2008FinancialCrisisandCOVID-19PandemiconLondonHousePrices" title="London House Prices Storytelling">this Tableau Story</a> for a preliminary analyis and exploration of London house prices from a comparative perspective.</p>
+</div>
+<div id="the-solution" class="section level1">
+<h1>The Solution</h1>
+<p>Using a dataset of the actual sale prices and characteristics of 13,998 properties, I train and stack five predictive models, tuning both features and parameters to minimize Root Mean Square Error (RMSE) and build a final ensemble.</p>
+<p>Harnessing this model, I predict prices in a new sample of 1999 houses. By comparing these predictions with corresponding asking prices, I forecast each property’s profitability and construct my portfolio by selecting only the 200 most profitable properties.</p>
+<p>My final ensemble model, which consists of a stack of all models except Model 4, has a high R2 of 88.63%. Consequently, while investing in all properties would yield my average return of 0% (which is likely an artefact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since these assumptions are weak, and expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.</p>
+</div>
+<div id="analysis-in-r" class="section level1">
+<h1><strong>Analysis in R</strong></h1>
+<hr />
+<div id="which-london-houses-promise-the-highest-yield-property-portfolio" class="section level2">
+<h2><strong>Which London Houses Promise the Highest Yield Property Portfolio?</strong></h2>
+<p><em>Note: because of the computational intensity of some of the models, I knit my .Rmd using a pre-loaded environment, rather than re-running all models.</em></p>
+<pre class="r"><code>load(here::here(&#39;data&#39;,&#39;FinalEnvironment.RData&#39;))</code></pre>
+</div>
+</div>
+<div id="loading-the-data" class="section level1">
+<h1>Loading the Data</h1>
+<p>I load two sets of data: the i) training data that has the actual prices; and the ii) out of sample data that has the asking prices.</p>
+<div id="reading-in-the-data" class="section level2">
+<h2>Reading in the Data</h2>
+<pre class="r"><code>#I read in both datasets
+london_house_prices_2019_training&lt;-read.csv(here::here(&#39;data&#39;,&#39;training_data_assignment_with_prices.csv&#39;))
+ 
+london_house_prices_2019_out_of_sample&lt;-read.csv(here::here(&#39;data&#39;,&#39;test_data_assignment.csv&#39;))</code></pre>
+</div>
+<div id="cleaning-the-data" class="section level2">
+<h2>Cleaning the Data</h2>
+<p>I now clean the data by fixing data types and variable levels, imputing missingness, and dropping variables.</p>
+<pre class="r"><code>#I fix the data types in both data sets
+
+# (1) I fix dates
+london_house_prices_2019_training &lt;- london_house_prices_2019_training %&gt;% mutate(date=as.Date(date))
+london_house_prices_2019_out_of_sample&lt;-london_house_prices_2019_out_of_sample %&gt;% mutate(date=as.Date(date))
+
+# (2) I change characters to factors
+london_house_prices_2019_training &lt;- london_house_prices_2019_training %&gt;% mutate_if(is.character,as.factor)
+london_house_prices_2019_out_of_sample&lt;-london_house_prices_2019_out_of_sample %&gt;% mutate_if(is.character,as.factor)
+
+# (3) I evaluate whether all characters have been changed successfully to factors
+str(london_house_prices_2019_training)
+str(london_house_prices_2019_out_of_sample)
+
+# (4) I make sure out of sample data and training data has the same levels for factors 
+a&lt;-union(levels(london_house_prices_2019_training$property_type),levels(london_house_prices_2019_out_of_sample$property_type))
+london_house_prices_2019_out_of_sample$property_type &lt;- factor(london_house_prices_2019_out_of_sample$property_type, levels = a)
+london_house_prices_2019_training$property_type &lt;- factor(london_house_prices_2019_training$property_type, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$whether_old_or_new),levels(london_house_prices_2019_out_of_sample$whether_old_or_new))
+london_house_prices_2019_out_of_sample$whether_old_or_new &lt;- factor(london_house_prices_2019_out_of_sample$whether_old_or_new, levels = a)
+london_house_prices_2019_training$whether_old_or_new &lt;- factor(london_house_prices_2019_training$whether_old_or_new, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$freehold_or_leasehold),levels(london_house_prices_2019_out_of_sample$freehold_or_leasehold))
+london_house_prices_2019_out_of_sample$freehold_or_leasehold &lt;- factor(london_house_prices_2019_out_of_sample$freehold_or_leasehold, levels = a)
+london_house_prices_2019_training$freehold_or_leasehold &lt;- factor(london_house_prices_2019_training$freehold_or_leasehold, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$postcode_short),levels(london_house_prices_2019_out_of_sample$postcode_short))
+london_house_prices_2019_out_of_sample$postcode_short &lt;- factor(london_house_prices_2019_out_of_sample$postcode_short, levels = a)
+london_house_prices_2019_training$postcode_short &lt;- factor(london_house_prices_2019_training$postcode_short, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$current_energy_rating),levels(london_house_prices_2019_out_of_sample$current_energy_rating))
+london_house_prices_2019_out_of_sample$current_energy_rating &lt;- factor(london_house_prices_2019_out_of_sample$current_energy_rating, levels = a)
+london_house_prices_2019_training$current_energy_rating &lt;- factor(london_house_prices_2019_training$current_energy_rating, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$windows_energy_eff),levels(london_house_prices_2019_out_of_sample$windows_energy_eff))
+london_house_prices_2019_out_of_sample$windows_energy_eff &lt;- factor(london_house_prices_2019_out_of_sample$windows_energy_eff, levels = a)
+london_house_prices_2019_training$windows_energy_eff &lt;- factor(london_house_prices_2019_training$windows_energy_eff, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$tenure),levels(london_house_prices_2019_out_of_sample$tenure))
+london_house_prices_2019_out_of_sample$tenure &lt;- factor(london_house_prices_2019_out_of_sample$tenure, levels = a)
+london_house_prices_2019_training$tenure &lt;- factor(london_house_prices_2019_training$tenure, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$nearest_station),levels(london_house_prices_2019_out_of_sample$nearest_station))
+london_house_prices_2019_out_of_sample$nearest_station &lt;- factor(london_house_prices_2019_out_of_sample$nearest_station, levels = a)
+london_house_prices_2019_training$nearest_station &lt;- factor(london_house_prices_2019_training$nearest_station, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$water_company),levels(london_house_prices_2019_out_of_sample$water_company))
+london_house_prices_2019_out_of_sample$water_company &lt;- factor(london_house_prices_2019_out_of_sample$water_company, levels = a)
+london_house_prices_2019_training$water_company &lt;- factor(london_house_prices_2019_training$water_company, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$district),levels(london_house_prices_2019_out_of_sample$district))
+london_house_prices_2019_out_of_sample$district &lt;- factor(london_house_prices_2019_out_of_sample$district, levels = a)
+london_house_prices_2019_training$district &lt;- factor(london_house_prices_2019_training$district, levels = a)
+
+a&lt;-union(levels(london_house_prices_2019_training$type_of_closest_station),levels(london_house_prices_2019_out_of_sample$type_of_closest_station))
+london_house_prices_2019_out_of_sample$type_of_closest_station &lt;- factor(london_house_prices_2019_out_of_sample$type_of_closest_station, levels = a)
+london_house_prices_2019_training$type_of_closest_station &lt;- factor(london_house_prices_2019_training$type_of_closest_station, levels = a)
+
+#(5) I take a quick look at what&#39;s in the data to ensure that steps 1-4 have each been successful...
+str(london_house_prices_2019_training)
+str(london_house_prices_2019_out_of_sample)</code></pre>
+<p>Now the data has been imported and transformed successfully:</p>
+<ul>
+<li>dates are in date format</li>
+<li>all characters are now factors</li>
+<li>the out of sample (oos) data and training data have the same levels for factors</li>
+<li>all variables are of the correct type (factor, numeric, integer, date)</li>
+</ul>
+</div>
+<div id="preparing-the-data-for-model-specification" class="section level2">
+<h2>Preparing the Data for Model Specification</h2>
+<p>I now prepare the clean data to be suitable for modelling and oos prediction.</p>
+<pre class="r"><code>#I drop all columns in the out of sample data containing ONLY NA values, to get a better idea of the variables I can use to make predictions
+london_house_prices_2019_out_of_sample_clean&lt;-london_house_prices_2019_out_of_sample[, colSums(is.na(london_house_prices_2019_out_of_sample)) != nrow(london_house_prices_2019_out_of_sample)]
+
+#I evaluate the common columns present in both the training data and oos data
+intersect(colnames(london_house_prices_2019_training),colnames(london_house_prices_2019_out_of_sample_clean))
+
+#Since there is only 4% complete rate on town, I drop this from both datasets
+london_house_prices_2019_out_of_sample_clean&lt;-london_house_prices_2019_out_of_sample_clean %&gt;% 
+  select(-town)
+
+london_house_prices_2019_training_clean&lt;-london_house_prices_2019_training %&gt;% 
+  select(-town)
+
+#I now identify the names of the 28 variables which are present in both datasets, i.e. which I can use in my models to make out-of-sample predictions
+variable_list &lt;- as.data.frame(intersect(colnames(london_house_prices_2019_training_clean), colnames(london_house_prices_2019_out_of_sample_clean)))
+
+#Knowing which are the relevant variables, I now re-run the skim() to ensure that these variables are fully cleaned in both datasets
+skim(london_house_prices_2019_out_of_sample_clean)
+skim(london_house_prices_2019_training_clean)
+
+#The only relevant variable with missingness in both datasets is &#39;population&#39; 
+
+#Though this missingness is very minor in both cases (0.5%  in sample and 0.4% out of sample), it will cause issues with LASSO and Cross-Validation, and so I impute these missing values with the median population
+
+london_house_prices_2019_out_of_sample_clean &lt;- london_house_prices_2019_out_of_sample_clean %&gt;% 
+  mutate(population = case_when(
+    is.na(as.numeric(population)) ~ median(as.numeric(population),na.rm=TRUE),
+    TRUE ~ as.numeric(population))) 
+
+london_house_prices_2019_training_clean &lt;- london_house_prices_2019_training_clean %&gt;% 
+  mutate(population = case_when(
+    is.na(as.numeric(population)) ~ median(as.numeric(population),na.rm=TRUE),
+    TRUE ~ as.numeric(population))) 
+
+#I perform a final check to ensure that this imputation has been successful, and find that it has been
+
+skim(london_house_prices_2019_out_of_sample_clean)
+skim(london_house_prices_2019_training_clean)</code></pre>
+<p>Now both data sets are fully prepared for accurate modelling and prediction, I proceed to split the (in-sample) training dataset into testing and training data.</p>
+</div>
+<div id="splitting-the-data-into-test-and-training-data" class="section level2">
+<h2>Splitting the Data into Test and Training Data</h2>
+<pre class="r"><code>set.seed(1234)
+
+#I perform an initial 75/25 split
+train_test_split &lt;- initial_split(london_house_prices_2019_training_clean, prop = 0.75) #training set contains 75% of the data
+
+#I now use this split to specify the training and testing data
+train_data &lt;- training(train_test_split)
+test_data &lt;- testing(train_test_split)</code></pre>
+</div>
+</div>
+<div id="visualizing-the-data" class="section level1">
+<h1>Visualizing the Data</h1>
+<p>I now visualise the data in order to get a better impression of the distribution of price across houses.</p>
+<p><strong>Visualize and examine the data. What plots could be useful here? What do you learn from these visualizations?</strong></p>
+<p>I find that a Histogram, Boxplot and Scatterplot each give me a good preliminary understanding of the key drivers of house prices, and how house prices are distributed.</p>
+<p>Notably, I learn from the histogram that though the vast majority of houses are under £1 million, there are a number of notable outliers which sold for up to £9 million. Investigating this strong positive skew further via a boxplot, I find that the greatest positive skew in prices is amongst Terraced properties, and that Detached properties command the highest median prices. Finally, I use a scatterplot to identify both the relationship between income and house prices, and also to identify how this relationship is heterogeneous across property types. Though I find that the type of property is associated with the price obtained for it, I also find that the relationship between property price and income is relatively constant (constant gradient) across all house types.</p>
+<pre class="r"><code>options(scipen=1000)
+
+#(1) I investigate this skew in prices better, via a histogram
+ggplot(train_data,aes(x=price))+geom_histogram(binwidth=10000)+theme_bw()+labs(y=&quot;Count&quot;,x=&quot;Price (£)&quot;,title=&quot;There is Considerable Positive Skew in the Distribution of London House Prices&quot;, subtitle=&quot;Histogram of the Distribution of House Prices&quot;)+scale_x_continuous(breaks=seq(0,9000000,500000),limits=c(0,9000000))</code></pre>
+<p><img src="buffett_files/figure-html/visualize_boxplot-1.png" width="1440" /></p>
+<pre class="r"><code>#(2) I produce a boxplot to evaluate the distribution of prices in the training data, by property type
+ggplot(train_data,aes(y=price, color=property_type))+geom_boxplot()+labs(y=&quot;Price (£)&quot;,title=&quot;Detached Houses have the Highest Median Price, though Terraced House Prices Demonstrate the Highest Positive Skew&quot;, subtitle=&quot;Boxplot of the Distribution of House Prices in Training Data by Property Type&quot;)+theme(axis.title = element_text())+theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())+theme_bw()</code></pre>
+<p><img src="buffett_files/figure-html/visualize_boxplot-2.png" width="1440" /></p>
+<pre class="r"><code>#(3) I produce a scatterplot demonstrating the relationship between Annual Income and House Prices by property type
+ggplot(train_data,aes(x=average_income, y=price, color=property_type))+geom_point()+geom_smooth()+theme_bw()+labs(x=&quot;Average Annual Income (£)&quot;,y=&quot;Price (£)&quot;,title=&quot;There are Equally Strong, Positive Correlations Between House Prices and Annual Income for All Property Types, though Detached Properties Command the Highest Prices for Each Income Level&quot;, subtitle=&quot;Scatterplot of the Relationship Between House Prices and Annual Income, by Property Type&quot;)+scale_y_continuous(breaks=seq(100000,1000000,100000),limits=c(100000,1000000))+theme(legend.title=element_blank(), legend.position=&quot;top&quot;)</code></pre>
+<p><img src="buffett_files/figure-html/visualize_boxplot-3.png" width="1440" /></p>
+<pre class="r"><code>#(4) Finally, I produce a scatterplot demonstrating the relationship between Total Floor Area and House Prices
+ggplot(train_data,aes(x=total_floor_area, y=price, color=property_type))+geom_point()+geom_smooth()+theme_bw()+labs(x=&quot;Total Floor Area (Meters Squared)&quot;,y=&quot;Price (£)&quot;,title=&quot;There Seems to be a Strong Positive Correlation Between House Prices and Total Floor Area for All Property Types&quot;, subtitle=&quot;Scatterplot of the Relationship Between House Prices and Total Floor Area, by Property Type&quot;)+scale_y_continuous(breaks=seq(100000,3000000,250000),limits=c(100000,3000000))+theme(legend.title=element_blank(), legend.position=&quot;top&quot;)</code></pre>
+<p><img src="buffett_files/figure-html/visualize_boxplot-4.png" width="1440" /></p>
+<p><strong>Estimate a correlation table between prices and other continuous variables. What do you glean from the correlation table?</strong></p>
+<pre class="r"><code># I produce a correlation table using GGally::ggcor()
+
+london_house_prices_2019_training_clean%&gt;% 
+  select(-ID) %&gt;% #keep Y variable last
+  ggcorr(method = c(&quot;pairwise&quot;, &quot;pearson&quot;), layout.exp = 2,label_round=2, label = TRUE,label_size = 2,hjust = 1,nbreaks = 5,size = 2,angle = -20)</code></pre>
+<p><img src="buffett_files/figure-html/correlation table-1.png" width="672" style="display: block; margin: auto;" />
+I find that there are strong <strong>positive</strong> correlations (&gt;=0.60) between:</p>
+<ul>
+<li>co2_emissions_potential and co2_emissions_current (0.72)</li>
+<li>co2_emissions_current and number_habitable_rooms (0.68)</li>
+<li>co2_emissions_current and total_floor area (0.76)</li>
+<li>number_habitable_rooms and total_floor_area (0.82)</li>
+<li>price and total_floor_area (0.69)</li>
+<li>co2_emissions potential and total_floor_area (0.64)</li>
+</ul>
+<p>I find that there are moderate <strong>negative</strong> correlations (&lt;=-0.30)between:</p>
+<ul>
+<li>london_zone and price (-0.31)</li>
+<li>london_zone and num_tube_lines (-0.31)</li>
+<li>num_rail_lines and num_tube_lines (-0.51)</li>
+<li>longitude and average_income (-0.34)</li>
+<li>latitude and num_rail_lines (-0.45)</li>
+</ul>
+<p>The majority of these relationships are self-explanatory: we expect current and potential co2 emissions to be related positively; we expect co2 emissions and house size (number of rooms, total floor area) to be related positively; and we expect price and house size to be related positively. Further, since London zones increase as distance from the city center increases, we naturally expect london zone and price to be negatively correlated, and london zone and number of tube lines to be negatively correlated. It is also intuitive that the more tube lines there are, the fewer rail lines, and vice versa. This too is a product of being closer to or further from the city center - the closer to the center, the more tube lines and the fewer rail lines. Latitutde and longitude relationships are more interesting and unexpected: average income falls as longitude increases, meaning that the more East a property, the lower the average income of its buyer, and since latitude is negatively correlated with number of rail lines, the more north a property, the fewer rail lines present.</p>
+</div>
+<div id="training-prediction-algorithms" class="section level1">
+<h1>Training Prediction Algorithms</h1>
+<p>In order to run m prediction algorithms, I take the following approach, focusing first on Features, and then on Model Tuning:</p>
+<p><strong>Model Features</strong></p>
+<ol style="list-style-type: decimal">
+<li><p>Use only the 28 variables which are common across the in-sample and out-of-sample data sets</p></li>
+<li><p>Remove All Redundant Variables</p></li>
+<li><p>[IN GENERAL] Use Boruta on a “Comprehensive” predictive model employing the remaining 26 variables and select the top most important predictors from its importance ranked output to train all the models on a final equation with all theoretically sound interactions.</p></li>
+<li><p>[FOR EACH MODEL] - Use Variable Importance from the caret() package: run the model once on the final equation of highly relevant/important Boruta predictors, and then again with only those predictors which have the highest importance for the specific model</p></li>
+<li><p>If the model trained only on its most important predictors outperforms the model run on the comprehensive final equation in terms of R2, it is selected as the final model - if this is not the case, the original comprehensive model is selected.</p></li>
+</ol>
+<p><strong>Model Tuning</strong></p>
+<ul>
+<li>All tunable parameters for each model are tuned within a reasonable range, and the model is optimised on the basis of these parameters to minimise RMSE</li>
+<li>If the model RMSE is minimised when any parameters are at their upper/lower limit, I increase parameter range, allowing it to be tuned optimally</li>
+<li>I repeat this until all parameters are selected within the specified range of values</li>
+</ul>
+<div id="setting-the-control" class="section level2">
+<h2>Setting the Control</h2>
+<p>In order to stack the models correctly, I must set the same control for all models, and save my predictions. In this chunk, I set the control.</p>
+<pre class="r"><code>CVfolds &lt;- 5
+
+# Define folds
+set.seed(1234)
+
+# create five folds with no repeats
+indexPreds &lt;- createMultiFolds(train_data$price, CVfolds, times = 1) 
+
+# Define traincontrol using folds
+control &lt;- trainControl(method = &quot;cv&quot;,  
+                     number = CVfolds, 
+                     returnResamp = &quot;final&quot;, 
+                     savePredictions = &quot;final&quot;, 
+                     index = indexPreds,
+                     verbose = TRUE)</code></pre>
+</div>
+<div id="an-intuitively-specified-linear-regression-model" class="section level2">
+<h2>An Intuitively Specified Linear Regression Model</h2>
+<pre class="r"><code>set.seed(1234)
+
+#we are going to train the model and report the results using k-fold cross validation
+example_lm&lt;-train(
+    price ~ distance_to_station +water_company+property_type+whether_old_or_new+freehold_or_leasehold+latitude+longitude,
+    train_data,
+   method = &quot;lm&quot;,
+    trControl = control
+   )
+
+# summary of the results
+summary(example_lm)</code></pre>
+<div id="evaluate-relative-variable-importance" class="section level3">
+<h3>Evaluate Relative Variable Importance</h3>
+<pre class="r"><code># we can check variable importance as well
+importance_example_lm &lt;- varImp(example_lm, scale=TRUE)
+plot(importance_example_lm)</code></pre>
+<p>In this generic model, longitude is the most important predictor of house prices, followed by Thames water company, Terraced property type and Semidetached property type. These are not obvious predictors, but their importance makes sense: Thames water covers the core city of london, and is therefore a proxy for centrality in the city, whcih we expect to be strong associated with house prices. This is also consistent with my exploratory visualizations, where I identified the Terraced property type as strongly related to higher house prices.</p>
+</div>
+<div id="predict-the-values-in-testing-and-out-of-sample-data" class="section level3">
+<h3>Predict the Values in Testing and Out of Sample Data</h3>
+<p>Below I use the predict function to test the performance of the model in testing data and summarize the performance of the example linear regression model.</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_example_lm &lt;- predict(example_lm,test_data)
+
+example_lm_results&lt;-data.frame(  RMSE = RMSE(predictions_example_lm, test_data$price), 
+                            R2 = R2(predictions_example_lm, test_data$price))
+
+example_lm_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 525312.2 0.1716668</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+example_lm_predictions_oos &lt;- predict(example_lm,london_house_prices_2019_out_of_sample)</code></pre>
+<p><strong>How can you measure the quality of your predictions?</strong></p>
+<p>I measure the quality of my predictions via Root Mean Square Error and R-Square on the testing data set. The model which minimises RMSE and maximises R2 on the testing data is the highest performing model, which makes the highest quality predictions (with the least error).</p>
+</div>
+</div>
+<div id="selecting-features-to-run-the-algorithms-on" class="section level2">
+<h2>Selecting Features to Run the Algorithms On</h2>
+<div id="removing-redundant-predictors" class="section level3">
+<h3>Removing Redundant Predictors</h3>
+<p>For feature selection, I test 26 available and relevant predictors. Specifically, these are the 28 available variables present in both the in-sample and out-of-sample data (summarized by the data frame ‘variable_list’), except:</p>
+<p><strong>1 variable which is not necessary</strong></p>
+<ul>
+<li>‘ID’, which is only used for identifying the house sales</li>
+</ul>
+<p><strong>1 redundant variable whose correlation with another predictor is greater than 0.70 in absolute terms</strong></p>
+<ul>
+<li>co2_emissions_current</li>
+</ul>
+<p>Note that, though the variable total_floor_area is most highly correlated with other predictors, I leave it in the model because this is likely to have considerable predictive power. I am however weary of potential collinearity resulting from its inclusion.</p>
+<p><strong>Below, I show the correlation table of only the variables I select for feature selection, none of which (besides total_floor_area) are highly correlated</strong></p>
+<pre class="r"><code># I produce a correlation table using GGally::ggcor()
+
+london_house_prices_2019_training_clean %&gt;% 
+  select(c(property_type,whether_old_or_new,freehold_or_leasehold,postcode_short,current_energy_rating,total_floor_area,number_habitable_rooms,co2_emissions_potential,energy_consumption_current,energy_consumption_potential,windows_energy_eff,tenure,latitude,longitude,population,altitude,london_zone,nearest_station,water_company,average_income,district,type_of_closest_station,num_tube_lines,num_rail_lines,num_light_rail_lines,distance_to_station)) %&gt;% 
+  ggcorr(method = c(&quot;pairwise&quot;, &quot;pearson&quot;), layout.exp = 2,label_round=2, label = TRUE,label_size = 2,hjust = 1,nbreaks = 5,size = 2,angle = -20)</code></pre>
+<p><img src="buffett_files/figure-html/correlation table of selected 26-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="boruta-approach" class="section level3">
+<h3>Boruta Approach</h3>
+<p>I now run the Boruta Feature Selection Algorithm on only these 26 variables.</p>
+<p><strong>Equation with Only the 26 Predictors</strong></p>
+<pre class="r"><code>initial_26_predictors&lt;-
+price ~ 
+property_type+
+whether_old_or_new+
+freehold_or_leasehold+
+postcode_short+
+current_energy_rating+
+total_floor_area+
+number_habitable_rooms+
+co2_emissions_potential+
+energy_consumption_current+
+energy_consumption_potential+
+windows_energy_eff+
+tenure+
+latitude+
+longitude+
+population+
+altitude+
+london_zone+
+nearest_station+
+water_company+
+average_income+
+district+
+type_of_closest_station+
+num_tube_lines+
+num_rail_lines+
+num_light_rail_lines+
+distance_to_station</code></pre>
+<p><strong>Using Boruta to Select Only The Most Important (Relevant) Predictors to Proceed with in Feature Selection</strong></p>
+<pre class="r"><code>set.seed(1234)
+
+#I perform a Boruta search
+boruta_output &lt;- Boruta(initial_26_predictors, data=train_data, doTrace=2)  
+names(boruta_output)
+
+#I obtain the significant variables including tentatively significant variables
+boruta_signif &lt;- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif) 
+
+#I perform a tentative rough fix
+roughFixMod &lt;- TentativeRoughFix(boruta_output)
+boruta_signif &lt;- getSelectedAttributes(roughFixMod)
+print(boruta_signif)
+
+#I obtain the variable Importance Scores
+imps &lt;- attStats(roughFixMod)
+imps2 = imps[imps$decision != &#39;Rejected&#39;, c(&#39;meanImp&#39;, &#39;decision&#39;)]
+head(imps2[order(-imps2$meanImp), ])  # descending sort
+
+#I obtain a confirmed formula, and find (unhelpfully) that it includes all 26 predictors
+boruta_confirmed &lt;- getConfirmedFormula(boruta_output)
+print(boruta_confirmed)
+
+#I now plot variable importance to apply my &#39;cliff&#39; feature selection approach
+plot(boruta_output, cex.axis=.35, las=2, lwd=1,xlab=&quot;&quot;, main=&quot;Boruta Algorithm | Variable Importance&quot;)</code></pre>
+<p>Notably, the Boruta algorithm ratifies my inclusion of total_floor_area despite collinearity risks, since this variable is demonstrated to be the most important predictor of all.</p>
+<p><strong>Boruta-Defined Subset</strong></p>
+<p>Though the Boruta algorithm demonstrates that all 26 features, captured by the equation ‘boruta_confirmed’, are relevant, in order to narrow down the number of features further, I select the following subset of the 15 most important variables from the 26 non-redundant, overlapping (between in-sample and out-of-sample datasets) variables specified above. Specifically, I identify a clear ‘cliff’ in importance following num_tube_lines. Therefore, I select all variables with a higher importance than type_of_closest_station.</p>
+<p>These 15 selected variables form an equation as follows:</p>
+<pre class="r"><code>boruta_15_predictors &lt;- 
+price~
+total_floor_area+
+london_zone+
+longitude+
+average_income+
+number_habitable_rooms+
+latitude+
+postcode_short+
+co2_emissions_potential+
+water_company+
+district+
+freehold_or_leasehold+
+altitude+
+property_type+
+energy_consumption_potential+
+num_tube_lines</code></pre>
+</div>
+<div id="final-equation" class="section level3">
+<h3>Final Equation</h3>
+<p>I now test each Model using only the subset of important variables identified via Boruta, plus additional hypothesised interaction terms between them. I include as many interactions as possible, since I run variable importance on each model and select only those which are most important for my final model of each type.</p>
+<p><strong>Boruta-Defined Subset Plus Interactions</strong></p>
+<pre class="r"><code>final_equation &lt;- 
+price~
+total_floor_area+
+london_zone+
+longitude+
+average_income+
+number_habitable_rooms+
+latitude+
+postcode_short+
+co2_emissions_potential+
+water_company+
+district+
+freehold_or_leasehold+
+altitude+
+property_type+
+energy_consumption_potential+
+num_tube_lines+
+  
+total_floor_area*average_income+
+total_floor_area*london_zone+
+total_floor_area*property_type+
+energy_consumption_potential*co2_emissions_potential+
+district*property_type+
+district*average_income+
+property_type*freehold_or_leasehold+
+longitude*latitude+
+longitude*altitude+
+latitude*altitude+
+london_zone*number_habitable_rooms+
+london_zone*property_type+
+london_zone*average_income+
+number_habitable_rooms*average_income+
+number_habitable_rooms*co2_emissions_potential</code></pre>
+<p><strong>Model Specification Process</strong></p>
+<p>I decide to proceed with all variables in the final_equation specification for my subsequent models, and take the following steps in order to optimise them on the basis of selected features and optimally tune them:</p>
+<ol style="list-style-type: decimal">
+<li>run the model on final_equation and tune its parameters</li>
+<li>identify the most important variables (using the cliff in importance as a sensible cut-off)</li>
+<li>evaluate the performance of this model run on final_equation</li>
+<li>re-run the model using only the most important variables identified and tune its parameters</li>
+<li>evaluate the performance of this model, and select it as the final specification IF it performs better than the version run on final_equation</li>
+</ol>
+</div>
+</div>
+<div id="model-1---lasso-linear-regression-model" class="section level2">
+<h2>Model 1 - LASSO Linear Regression Model</h2>
+<p>I now run a comprehensive LASSO linear regression model, containing all predictors in the final_equation above. The LASSO specification is used for further feature selection.</p>
+<pre class="r"><code>set.seed(1234)
+
+#set lambda (penalty parameter) tuning
+lambda_seq &lt;- seq(0, 10000, length = 100)
+
+model1 &lt;- train( 
+ final_equation,
+    train_data,
+ method = &quot;glmnet&quot;,
+ preProc = c(&quot;center&quot;, &quot;scale&quot;), #This option standardizes the data before running the LASSO regression
+ trControl = control,
+ 
+ # tune lambda
+ tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) #alpha=1 specifies to run a LASSO regression
+  )</code></pre>
+<pre class="r"><code># best hyperparameters (best lambda)
+model1$bestTune</code></pre>
+<pre><code>##   alpha   lambda
+## 3     1 202.0202</code></pre>
+<pre class="r"><code># check variable importance...
+model1_importance &lt;- varImp(model1, scale=TRUE)$importance
+
+# .. and plot 50 most important variables for LASSO
+model1_importance %&gt;% 
+  as.data.frame() %&gt;%
+  rownames_to_column() %&gt;%
+  top_n(50, Overall) %&gt;%
+  arrange(Overall) %&gt;% 
+  mutate(rowname = forcats::fct_inorder(rowname)) %&gt;%
+  ggplot()+
+    geom_col(aes(x = rowname, y = Overall))+
+    coord_flip()+
+    theme_bw()</code></pre>
+<p><img src="buffett_files/figure-html/Model 1 Evaluation-1.png" width="960" /></p>
+<div id="model-1-variable-importance" class="section level3">
+<h3>Model 1 Variable Importance</h3>
+<pre class="r"><code>#we can check variable importance empirically as well as graphically
+model1_varImp &lt;- varImp(model1, scale=TRUE)
+
+print(model1_varImp)</code></pre>
+<pre><code>## glmnet variable importance
+## 
+##   only 20 most important variables shown (out of 444)
+## 
+##                                                Overall
+## total_floor_area:london_zone                   100.000
+## total_floor_area                                72.528
+## total_floor_area:average_income                 62.200
+## london_zone                                     40.705
+## london_zone:number_habitable_rooms              29.130
+## number_habitable_rooms                          24.673
+## districtCamden                                  23.546
+## districtKensington and Chelsea                  20.726
+## districtCamden:property_typeF                   19.259
+## london_zone:property_typeF                      12.964
+## average_income:districtWestminster              12.797
+## districtKensington and Chelsea:property_typeF   11.651
+## number_habitable_rooms:co2_emissions_potential  10.146
+## longitude                                        8.748
+## postcode_shortSW1X                               8.641
+## districtKensington and Chelsea:property_typeT    8.442
+## postcode_shortW1K                                8.391
+## postcode_shortSW3                                8.260
+## average_income                                   8.065
+## districtCamden:property_typeT                    7.904</code></pre>
+<p><strong>The Most Important Predictors in the LASSO Model Form an Equation as Follows</strong></p>
+<pre class="r"><code>#top 9 most important, with a minimum importance of 19%
+model1_cliff_important &lt;- 
+price~
+total_floor_area*london_zone+
+total_floor_area+
+total_floor_area*average_income+
+london_zone+
+london_zone*number_habitable_rooms+
+number_habitable_rooms+
+district+
+district*property_type</code></pre>
+</div>
+<div id="model-1-performance" class="section level3">
+<h3>Model 1 Performance</h3>
+<p>Predict the Values in Testing and Out of Sample Data.</p>
+<pre class="r"><code>#We can predict the testing values
+
+predictions_model1 &lt;- predict(model1,test_data)
+
+model1_results&lt;-data.frame(RMSE = RMSE(predictions_model1, test_data$price), 
+                            R2 = R2(predictions_model1, test_data$price))
+
+model1_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 230753.7 0.8450328</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model1_predictions_oos &lt;- predict(model1,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="re-running-model-1-with-only-the-most-important-predictors-and-evaluating-its-performance" class="section level3">
+<h3>Re-Running Model 1 with Only the Most Important Predictors and Evaluating its Performance</h3>
+<pre class="r"><code>set.seed(1234)
+
+#options to tune lambda (penalty parameter)
+lambda_seq &lt;- seq(0, 10000, length = 100)
+
+model1_cliff &lt;- train( #population+
+ model1_cliff_important,
+    train_data,
+ method = &quot;glmnet&quot;,
+ preProc = c(&quot;center&quot;, &quot;scale&quot;), #This option standardizes the data before running the LASSO regression
+ trControl = control,
+ 
+ #tune lambda
+ tuneGrid = expand.grid(alpha = 1, lambda = lambda_seq) #alpha=1 specifies to run a LASSO regression
+  )
+
+# best hyperparameters (best lambda)
+model1_cliff$bestTune
+
+#coefficients for best lambda
+coef(model1_cliff$finalModel, model1_cliff$bestTune$lambda)</code></pre>
+<pre class="r"><code>#we can predict the testing values
+predictions_model1_cliff &lt;- predict(model1_cliff,test_data)
+
+model1_cliff_results&lt;-data.frame(RMSE = RMSE(predictions_model1_cliff, test_data$price), 
+                            R2 = R2(predictions_model1_cliff, test_data$price))
+
+model1_cliff_results                       
+
+#we can predict prices for out of sample data the same way
+model1_predictions_oos &lt;- predict(model1_cliff,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="final-model-1" class="section level3">
+<h3>Final Model 1</h3>
+<p><strong>Model 1 Report</strong></p>
+<p>As would be expected (given that LASSO penalises low-importance variables), running LASSO with only the top 8 predictors has little effect on its R2 result - worsening predictive power very slightly. Since LASSO is itself a feature selection approach, the features of the final model are specified by the final_equation, including 15 Boruta-defined variables, plus interactions. The tuning parameters are as follows: Alpha = 1 (LASSO Regression), Lambda = 202.0202. I find that Model 1 has an R2 of 84.50% and RMSE of 230754, meaning that it substantially outperforms the generically specified linear regression model, which had an R2 of 17.17%.</p>
+<pre class="r"><code>model1_final &lt;- model1</code></pre>
+<p>Thus,</p>
+<pre class="r"><code>#we can predict the testing values
+
+predictions_model1_final &lt;- predict(model1_final,test_data)
+
+model1_final_results &lt;-data.frame(RMSE = RMSE(predictions_model1_final, test_data$price), 
+                            R2 = R2(predictions_model1_final, test_data$price))
+
+model1_final_results                      </code></pre>
+<pre><code>##       RMSE        R2
+## 1 230753.7 0.8450328</code></pre>
+<pre class="r"><code>#we can predict prices for out of sample data the same way
+model1_final_predictions_oos &lt;- predict(model1_final,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+</div>
+<div id="model-2---decision-tree" class="section level2">
+<h2>Model 2 - Decision Tree</h2>
+<p>Next I fit a tree model using the same subset of features, and tuning the value of the complexity parameter, cp.</p>
+<pre class="r"><code>set.seed(1234)
+
+#I choose a range of cp values broad enough to allow the algorithm to tune optimally to minimise RMSE
+cp_grid &lt;- expand.grid(cp = seq( 0.0000, 0.0030,0.00001))
+
+model2 &lt;- train(final_equation, 
+                   data = train_data, 
+                   method = &quot;rpart&quot;,
+                   metric=&quot;RMSE&quot;,
+                   trControl=control,
+                   tuneGrid=cp_grid) 
+
+#plot the best tree model found
+rpart.plot(model2$finalModel)
+
+
+print(model2)</code></pre>
+<pre class="r"><code>#print the search results of &#39;train&#39; function
+plot(model2)</code></pre>
+<p><img src="buffett_files/figure-html/Model 2 Parameter-1.png" width="672" /></p>
+<p>I find that the optimal complexity parameter (cp) value is 0.00008. I now examine the predictive performance of the best tree in the test data.</p>
+<div id="model-2-variable-importance" class="section level3">
+<h3>Model 2 Variable Importance</h3>
+<pre class="r"><code>#we can check variable importance as well
+model2_importance &lt;- varImp(model2, scale=TRUE)
+print(model2_importance)</code></pre>
+<pre><code>## rpart variable importance
+## 
+##   only 20 most important variables shown (out of 501)
+## 
+##                                                      Overall
+## total_floor_area:average_income                       100.00
+## longitude                                              83.05
+## latitude                                               74.33
+## longitude:latitude                                     74.13
+## london_zone:average_income                             57.72
+## longitude:altitude                                     54.35
+## total_floor_area                                       53.49
+## total_floor_area:london_zone                           44.96
+## average_income:number_habitable_rooms                  43.27
+## london_zone                                            39.07
+## number_habitable_rooms:co2_emissions_potential         34.90
+## latitude:altitude                                      33.81
+## altitude                                               32.61
+## co2_emissions_potential                                30.36
+## average_income                                         28.51
+## london_zone:property_typeF                             25.96
+## co2_emissions_potential:energy_consumption_potential   25.56
+## energy_consumption_potential                           24.49
+## london_zone:number_habitable_rooms                     22.43
+## total_floor_area:property_typeT                        19.92</code></pre>
+<pre class="r"><code>#top 13 most important, with a minimum importance of 36%
+model2_cliff_important&lt;-
+  price~
+  total_floor_area*average_income+
+  longitude+
+  latitude+
+  longitude*latitude+
+  london_zone*average_income+
+  longitude*altitude+
+  total_floor_area+
+  average_income*number_habitable_rooms+
+  total_floor_area*london_zone+
+  latitude*altitude+
+  altitude+
+  london_zone+
+  number_habitable_rooms*co2_emissions_potential</code></pre>
+</div>
+<div id="model-2-performance" class="section level3">
+<h3>Model 2 Performance</h3>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model2 &lt;- predict(model2,test_data)
+
+model2_results&lt;-data.frame(RMSE = RMSE(predictions_model2, test_data$price), 
+                            R2 = R2(predictions_model2, test_data$price))
+
+model2_results                       </code></pre>
+<pre><code>##       RMSE       R2
+## 1 261461.5 0.794681</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model2_predictions_oos &lt;- predict(model2,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="re-running-model-2-with-only-the-most-important-predictors-and-evaluating-its-performance" class="section level3">
+<h3>Re-Running Model 2 with Only the Most Important Predictors and Evaluating its Performance</h3>
+<pre class="r"><code>set.seed(1234)
+
+#I choose cp values that seems to result in low error based on plot above
+cp_grid &lt;- expand.grid(cp = seq( 0.0000, 0.0030,0.00001))
+
+model2_cliff &lt;- train(model2_cliff_important, 
+                   data = train_data, 
+                   method = &quot;rpart&quot;,
+                   metric=&quot;RMSE&quot;,
+                   trControl=control,
+                   tuneGrid=cp_grid) 
+
+# Plot the best tree model found
+rpart.plot(model2_cliff$finalModel)
+
+# Print the search results of &#39;train&#39; function
+plot(model2_cliff) 
+
+print(model2_cliff)</code></pre>
+<pre class="r"><code>#we can predict the testing values
+predictions_model2_cliff &lt;- predict(model2_cliff,test_data)
+
+model2_cliff_results&lt;-data.frame(RMSE = RMSE(predictions_model2_cliff, test_data$price), 
+                            R2 = R2(predictions_model2_cliff, test_data$price))
+
+model2_cliff_results                       
+
+#we can predict prices for out of sample data the same way
+model2_predictions_oos &lt;- predict(model2_cliff,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="final-model-2" class="section level3">
+<h3>Final Model 2</h3>
+<p><strong>Model 2 Report</strong></p>
+<p>Since this tree, trained on only the most important features (as determined by the cliff in the ranking of relative predictor importance), has a lower R2 than the model including all predictors in the final_equation, I choose the former model, with cp = 0.00008, and R2 of 79.46%, as my final tree model.</p>
+<pre class="r"><code>model2_final &lt;- model2</code></pre>
+<p>Thus,</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model2_final &lt;- predict(model2_final,test_data)
+
+model2_final_results &lt;-data.frame(RMSE = RMSE(predictions_model2_final, test_data$price), 
+                            R2 = R2(predictions_model2_final, test_data$price))
+
+model2_final_results                      </code></pre>
+<pre><code>##       RMSE       R2
+## 1 261461.5 0.794681</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model2_final_predictions_oos &lt;- predict(model2_final,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+</div>
+<div id="model-3---k-nearest-neighbours-k-nn" class="section level2">
+<h2>Model 3 - K Nearest Neighbours (k-NN)</h2>
+<pre class="r"><code>set.seed(1234)
+
+#I set the tuning range for number of nearest neighbiurs large enough to allow RMSE optimisation/minimisation
+knnGrid &lt;-  expand.grid(k= seq(1,11, by = 2)) 
+
+model3 &lt;- train(final_equation, data=train_data,
+                 preProcess = c(&quot;center&quot;, &quot;scale&quot;), 
+                 method=&quot;knn&quot;, 
+                 metric=&quot;RMSE&quot;, 
+                 trControl=control,
+                 tuneGrid = knnGrid)
+
+# display results
+print(model3)</code></pre>
+<pre class="r"><code># plot results
+plot(model3)</code></pre>
+<p><img src="buffett_files/figure-html/Model 3 Parameter Evaluation-1.png" width="672" /></p>
+<div id="model-3-variable-importance" class="section level3">
+<h3>Model 3 Variable Importance</h3>
+<pre class="r"><code># we can check variable importance as well
+model3_importance &lt;- varImp(model3, scale=TRUE)
+print(model3_importance)</code></pre>
+<pre><code>## loess r-squared variable importance
+## 
+##                               Overall
+## total_floor_area             100.0000
+## co2_emissions_potential       54.3623
+## number_habitable_rooms        48.3279
+## average_income                22.8795
+## london_zone                   20.7655
+## longitude                     20.5480
+## num_tube_lines                12.8093
+## postcode_short                 8.9933
+## latitude                       7.9215
+## freehold_or_leasehold          7.8842
+## water_company                  4.1852
+## district                       2.2339
+## energy_consumption_potential   0.9206
+## property_type                  0.4617
+## altitude                       0.0000</code></pre>
+<pre class="r"><code>#top 6 most important, with a minimum importance of 21%
+model3_cliff_important&lt;-
+  price~
+  total_floor_area+
+  co2_emissions_potential+
+  number_habitable_rooms+
+  average_income+
+  london_zone+
+  longitude</code></pre>
+</div>
+<div id="model-3-performance" class="section level3">
+<h3>Model 3 Performance</h3>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model3 &lt;- predict(model3,test_data)
+
+model3_results&lt;-data.frame(RMSE = RMSE(predictions_model3, test_data$price), 
+                            R2 = R2(predictions_model3, test_data$price))
+
+model3_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 301887.3 0.7385181</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model3_predictions_oos &lt;- predict(model3,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="re-running-model-3-with-only-the-most-important-predictors-and-evaluating-its-performance" class="section level3">
+<h3>Re-Running Model 3 with Only the Most Important Predictors and Evaluating its Performance</h3>
+<pre class="r"><code>set.seed(1234)
+
+knnGrid &lt;-  expand.grid(k= seq(1,11, by = 2)) 
+
+model3_cliff &lt;- train(model3_cliff_important, data=train_data,
+                 preProcess = c(&quot;center&quot;, &quot;scale&quot;), 
+                 method=&quot;knn&quot;, 
+                 metric=&quot;RMSE&quot;, 
+                 trControl=control,
+                 tuneGrid = knnGrid)
+
+# display results
+print(model3_cliff)
+
+# plot results
+plot(model3_cliff)</code></pre>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model3_cliff &lt;- predict(model3_cliff,test_data)
+
+model3_cliff_results&lt;-data.frame(RMSE = RMSE(predictions_model3_cliff, test_data$price), 
+                            R2 = R2(predictions_model3_cliff, test_data$price))
+
+model3_cliff_results                       
+
+#We can predict prices for out of sample data the same way
+model3_predictions_oos &lt;- predict(model3_cliff,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="final-model-3" class="section level3">
+<h3>Final Model 3</h3>
+<p><strong>Model 3 Report</strong></p>
+<p>Since the R2 of the model run only on the most important variables (as determined by an cliff method) is lower than that of the model trained on the final_equation, I proceed with the complete model as my final model 3. Specifically, this model is optimised (RMSE is minimimsed) when k=3, and the resulting R2 is 73.85%.</p>
+<pre class="r"><code>model3_final &lt;- model3</code></pre>
+<p>Thus,</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model3_final &lt;- predict(model3_final,test_data)
+
+model3_final_results &lt;-data.frame(RMSE = RMSE(predictions_model3_final, test_data$price), 
+                            R2 = R2(predictions_model3_final, test_data$price))
+
+model3_final_results                      </code></pre>
+<pre><code>##       RMSE        R2
+## 1 301887.3 0.7385181</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model3_final_predictions_oos &lt;- predict(model3_final,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+</div>
+<div id="model-4---random-forest" class="section level2">
+<h2>Model 4 - Random Forest</h2>
+<p>Parameters for random forest models in the ranger function that implements random forest</p>
+<ol style="list-style-type: lower-roman">
+<li><p>TUNED 1 | ‘mtry’: number of randomly chosen variables to do a split each time</p></li>
+<li><p>TUNED 2 | min.node.size: Minimum size allowed for a leaf (default is 5 for regression)</p></li>
+<li><p>splitrule: purity measure we use. I will only use “variance”, the default for regression</p></li>
+<li><p>‘importance’: is an option to get a sense of the importance of the variables. I use it below.</p></li>
+</ol>
+<pre class="r"><code>set.seed(1234)
+
+#I define the tuning grid: tuneGrid with a sufficiently large range for optimisation.minimisation of RMSE
+gridRF &lt;- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = &quot;variance&quot;,
+  .min.node.size = seq(5,50,by=5)
+)
+
+#fit random forest: model=ranger using caret library and the train function
+model4 &lt;- train(
+  final_equation, data=train_data,
+  method = &quot;ranger&quot;,
+  metric=&quot;RMSE&quot;,
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = &#39;permutation&#39; 
+  #This is the method used to determine variable importance
+  #Permutation=leave one variable out and fit the model again
+)
+
+# display results
+print(model4)</code></pre>
+<pre class="r"><code># plot results
+plot(model4)</code></pre>
+<p><img src="buffett_files/figure-html/Model%204%20Plot-1.png" width="672" /></p>
+<div id="model-4-variable-importance" class="section level3">
+<h3>Model 4 Variable Importance</h3>
+<pre class="r"><code># we can check variable importance as well
+model4_importance &lt;- varImp(model4, scale=TRUE)
+print(model4_importance)</code></pre>
+<pre><code>## ranger variable importance
+## 
+##   only 20 most important variables shown (out of 444)
+## 
+##                                                Overall
+## total_floor_area                                100.00
+## total_floor_area:average_income                  99.46
+## london_zone                                      61.66
+## london_zone:number_habitable_rooms               59.78
+## london_zone:average_income                       57.83
+## total_floor_area:london_zone                     55.76
+## average_income:number_habitable_rooms            53.20
+## number_habitable_rooms:co2_emissions_potential   39.28
+## number_habitable_rooms                           35.55
+## longitude:latitude                               24.92
+## london_zone:property_typeF                       22.35
+## co2_emissions_potential                          21.20
+## districtKensington and Chelsea                   20.75
+## total_floor_area:property_typeT                  19.91
+## average_income:districtKensington and Chelsea    19.76
+## longitude                                        19.28
+## freehold_or_leaseholdL:property_typeF            16.77
+## property_typeF                                   15.23
+## latitude                                         13.54
+## energy_consumption_potential                     13.48</code></pre>
+<pre class="r"><code>#top 9 most important, with a minimum importance of 36%
+model4_cliff_important&lt;-
+  price~
+  total_floor_area*average_income+
+  total_floor_area+
+  total_floor_area*london_zone+
+  london_zone+
+  london_zone*average_income+
+  london_zone*number_habitable_rooms+
+  number_habitable_rooms+
+  average_income*number_habitable_rooms+
+  number_habitable_rooms*co2_emissions_potential</code></pre>
+</div>
+<div id="model-4-performance" class="section level3">
+<h3>Model 4 Performance</h3>
+<p>Let’s examine the predictive performance of the best RF model.</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model4 &lt;- predict(model4,test_data)
+
+model4_results&lt;-data.frame(RMSE = RMSE(predictions_model4, test_data$price), 
+                            R2 = R2(predictions_model4, test_data$price))
+
+model4_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 268646.3 0.8164724</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model4_predictions_oos &lt;- predict(model4,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="re-running-model-4-with-only-the-most-important-predictors-and-evaluating-its-performance" class="section level3">
+<h3>Re-Running Model 4 with Only the Most Important Predictors and Evaluating its Performance</h3>
+<pre class="r"><code>set.seed(1234)
+
+gridRF &lt;- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = &quot;variance&quot;,
+  .min.node.size = seq(5,50,by=5)
+)
+
+model4_cliff &lt;- train(
+  model4_cliff_important, data=train_data,
+  method = &quot;ranger&quot;,
+  metric=&quot;RMSE&quot;,
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = &#39;permutation&#39; 
+
+)
+
+# display results
+print(model4_cliff)
+
+# plot results
+plot(model4_cliff)</code></pre>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model4_cliff &lt;- predict(model4_cliff,test_data)
+
+model4_cliff_results&lt;-data.frame(RMSE = RMSE(predictions_model4_cliff, test_data$price), 
+                            R2 = R2(predictions_model4_cliff, test_data$price))
+
+model4_cliff_results                       
+
+#We can predict prices for out of sample data the same way
+model4_predictions_oos &lt;- predict(model4_cliff,london_house_prices_2019_out_of_sample)</code></pre>
+<p>Since the R2 of the model run only on all the final_equation variables is marginally higher than that of the model trained on the smaller subset of important variables, I proceed with the full model as my final model 4. However, as a final tuning step for Model 4, I also tune the optimal number of trees using the function below.</p>
+</div>
+<div id="tuning-the-optimal-number-of-trees-for-model-4" class="section level3">
+<h3>Tuning the Optimal Number of Trees for Model 4</h3>
+<pre class="r"><code>set.seed(1234)
+
+tunetrees_RMSEmin &lt;- function(number_trees,k){
+  
+  #I build an empty vector &#39;result&#39; to be filled with the results
+  result = c()
+  
+  #I loop over the number of trees in this vector
+  for (number in number_trees) {
+  
+#I run the randomforest with the same tuning parameters as before
+gridRF &lt;- data.frame(
+  .mtry = seq(5,50,by=5),
+  .min.node.size = seq(5,50,by=5),
+  .splitrule = &quot;variance&quot;
+)
+
+model4_tunetrees &lt;- train(
+  final_equation, data=train_data,
+  method = &quot;ranger&quot;,
+  metric=&quot;RMSE&quot;,
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = &#39;permutation&#39;,
+  num.trees=number
+
+)
+    
+    result = c(result,mean(model4_tunetrees$resample$RMSE))
+  }
+  
+  optimal = which(result==min(result))
+  paste(number_trees[optimal],&#39;is the optimal number of trees&#39;)
+  
+}
+
+#I create a vector of values of number of trees to test in the forest and set k for cross-validation
+number_trees=c(50,100,250,500)
+k=5
+
+#I run the function to find the optimal tuning parameters for the model
+tunetrees_RMSEmin(number_trees,k)
+
+#I print the result
+print(model4_tunetrees)</code></pre>
+<p>This function tells me that 500 is the optimal number of trees (and that mtry=30 and min.node.size=30), of those specified, to minimize RMSE. Thus, my final Model 4 is specified with 500 trees.</p>
+<pre class="r"><code>set.seed(1234)
+
+#I define the tuning grid: tuneGrid with a sufficiently large range for optimisation.minimisation of RMSE
+gridRF &lt;- data.frame(
+  .mtry = seq(5,50,by=5),
+  .splitrule = &quot;variance&quot;,
+  .min.node.size = seq(5,50,by=5)
+)
+
+#fit random forest: model=ranger using caret library and the train function
+model4_tunetrees &lt;- train(
+  final_equation, data=train_data,
+  method = &quot;ranger&quot;,
+  metric=&quot;RMSE&quot;,
+  trControl = control,
+  tuneGrid = gridRF,
+  importance = &#39;permutation&#39;,
+  num.trees=500
+  #This is the method used to determine variable importance
+  #Permutation=leave one variable out and fit the model again
+)
+
+# display results
+print(model4_tunetrees)
+
+# plot results
+plot(model4_tunetrees)</code></pre>
+</div>
+<div id="model-4-variable-importance-and-performance-with-tuned-trees" class="section level3">
+<h3>Model 4 Variable Importance and Performance (with Tuned Trees)</h3>
+<pre class="r"><code># we can check variable importance as well
+model4_tunetrees_importance &lt;- varImp(model4_tunetrees, scale=TRUE)
+print(model4_tunetrees_importance)</code></pre>
+<pre><code>## ranger variable importance
+## 
+##   only 20 most important variables shown (out of 444)
+## 
+##                                                Overall
+## total_floor_area                                100.00
+## total_floor_area:average_income                  99.46
+## london_zone                                      61.66
+## london_zone:number_habitable_rooms               59.78
+## london_zone:average_income                       57.83
+## total_floor_area:london_zone                     55.76
+## average_income:number_habitable_rooms            53.20
+## number_habitable_rooms:co2_emissions_potential   39.28
+## number_habitable_rooms                           35.55
+## longitude:latitude                               24.92
+## london_zone:property_typeF                       22.35
+## co2_emissions_potential                          21.20
+## districtKensington and Chelsea                   20.75
+## total_floor_area:property_typeT                  19.91
+## average_income:districtKensington and Chelsea    19.76
+## longitude                                        19.28
+## freehold_or_leaseholdL:property_typeF            16.77
+## property_typeF                                   15.23
+## latitude                                         13.54
+## energy_consumption_potential                     13.48</code></pre>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model4_tunetrees &lt;- predict(model4_tunetrees,test_data)
+
+model4_tunetrees_results&lt;-data.frame(RMSE = RMSE(predictions_model4_tunetrees, test_data$price), 
+                            R2 = R2(predictions_model4_tunetrees, test_data$price))
+
+model4_tunetrees_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 268646.3 0.8164724</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model4_tunetrees_predictions_oos &lt;- predict(model4_tunetrees,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+<div id="final-model-4" class="section level3">
+<h3>Final Model 4</h3>
+<p>Despite performing the same as the random forest model without tuned trees, I select the model for which trees have been tuned as the final, optimal, model 4, since this is both certain to minimise R2 within the limits of all possible tunable parameters, and to ensure my methodology is versatile - as the tuned and un-tuned models are unlikely to perform comparably on other datasets or random seeds.</p>
+<p><strong>Model 4 Report</strong></p>
+<p>Thus, my final model 4 is tuned with parameters mtry=30, splitrule=variance and min.node.size=30, with num.trees=500. This results in an R2 of 81.65%.</p>
+<pre class="r"><code>model4_final &lt;- model4_tunetrees</code></pre>
+<p>Thus,</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model4_final &lt;- predict(model4_final,test_data)
+
+model4_final_results &lt;-data.frame(RMSE = RMSE(predictions_model4_final, test_data$price), 
+                            R2 = R2(predictions_model4_final, test_data$price))
+
+model4_final_results                      </code></pre>
+<pre><code>##       RMSE        R2
+## 1 268646.3 0.8164724</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model4_final_predictions_oos &lt;- predict(model4_final,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+</div>
+<div id="model-5---gradient-boosting-machine-gbm" class="section level2">
+<h2>Model 5 - Gradient Boosting Machine (GBM)</h2>
+<p>Now I demonstrate the use of GBM. The syntax is very similar to that of AdaBoost, but unlike AdaBoost can be run on regression as well as classification models. The GBM function has the following parameters:</p>
+<ol style="list-style-type: lower-roman">
+<li>n.trees: number of iterations, i.e. trees.</li>
+<li>interaction.depth: complexity of the tree.</li>
+<li>shrinkage: learning rate, how quickly the algorithm adapts.</li>
+<li>n.minobsinnode: the minimum number of training set samples in a node to stop splitting.</li>
+</ol>
+<div id="generic-gbm" class="section level3">
+<h3>Generic GBM</h3>
+<p>I first try a generic GBM using the parameters provided in the workshop.</p>
+<pre class="r"><code>set.seed(1234)
+
+#I ensure the grid is sufficiently broad for the optimal, RMSE-minimising parameters to be selected
+grid&lt;-expand.grid(interaction.depth = 6,n.trees = 100,shrinkage =0.075, n.minobsinnode = 10)
+
+model5_generic &lt;- train(final_equation, data=train_data,
+                 method = &quot;gbm&quot;, 
+                 trControl = control,
+                 tuneGrid =grid,
+                   metric = &quot;RMSE&quot;,
+                 verbose = FALSE
+                 )
+
+print(model5_generic)
+
+predictions_model5_generic &lt;- predict(model5_generic,test_data)
+
+model5_generic_results&lt;-data.frame(RMSE = RMSE(predictions_model5_generic, test_data$price), 
+                            R2 = R2(predictions_model5_generic, test_data$price))
+
+model5_generic_results                       
+
+model5_generic_predictions_oos &lt;- predict(model5_generic,london_house_prices_2019_out_of_sample)</code></pre>
+<p>Though I obtain the highest R2 yet, of 84.8%, I now tune the 4 parameters in order to obtain a better predictive model. This process is highly computer-intensive, and takes about 10 hours to run on a standard laptop computer.</p>
+</div>
+<div id="optimally-tuned-gbm" class="section level3">
+<h3>Optimally Tuned GBM</h3>
+<pre class="r"><code>set.seed(1234)
+
+#I ensure the grid is sufficiently broad for the optimal, RMSE-minimising parameters to be selected
+grid&lt;-expand.grid(n.trees = 250, interaction.depth = seq(3,15,by=3), shrinkage =seq(0.025,0.1,by=0.025), n.minobsinnode = seq(5,15,by=5))
+
+model5 &lt;- train(final_equation, data=train_data,
+                 method = &quot;gbm&quot;, 
+                 trControl = control,
+                 tuneGrid =grid,
+                   metric = &quot;RMSE&quot;,
+                 verbose = FALSE
+                 )
+
+print(model5)</code></pre>
+</div>
+<div id="model-5-variable-importance" class="section level3">
+<h3>Model 5 Variable Importance</h3>
+<pre class="r"><code>#Evaluating the importance of variables in model 5, which requires the &quot;gbm&quot; library
+varImp(model5)</code></pre>
+<pre><code>## gbm variable importance
+## 
+##   only 20 most important variables shown (out of 444)
+## 
+##                                                Overall
+## total_floor_area:average_income                100.000
+## london_zone:average_income                      38.794
+## total_floor_area                                 9.327
+## districtKensington and Chelsea                   7.595
+## london_zone                                      7.172
+## longitude                                        3.947
+## total_floor_area:property_typeF                  3.880
+## co2_emissions_potential                          3.779
+## latitude                                         3.348
+## number_habitable_rooms:co2_emissions_potential   3.294
+## total_floor_area:property_typeT                  3.174
+## average_income:districtKensington and Chelsea    2.589
+## total_floor_area:london_zone                     2.307
+## average_income:number_habitable_rooms            2.090
+## longitude:altitude                               1.929
+## districtKensington and Chelsea:property_typeT    1.780
+## longitude:latitude                               1.705
+## energy_consumption_potential                     1.522
+## london_zone:property_typeF                       1.383
+## london_zone:number_habitable_rooms               1.294</code></pre>
+</div>
+<div id="model-5-performance" class="section level3">
+<h3>Model 5 Performance</h3>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model5 &lt;- predict(model5,test_data)
+
+model5_results&lt;-data.frame(RMSE = RMSE(predictions_model5, test_data$price), 
+                            R2 = R2(predictions_model5, test_data$price))
+
+model5_results                       </code></pre>
+<pre><code>##       RMSE        R2
+## 1 202438.3 0.8787629</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model5_predictions_oos &lt;- predict(model5,london_house_prices_2019_out_of_sample)</code></pre>
+<p>Since the performance of Model 5 is already considerable and this is a highly time and computer intensive algorithm, I do not re-run the GBM algorithm on a subset of important features. Further, this decision is ratified by the fact that, in the cases of Models 1-4, re-running on selected important features resulted in a universal worsening of model performance (as evaluated by R2), implying that running the model on a subset is unlikely to substantively improve performance.</p>
+</div>
+<div id="final-model-5" class="section level3">
+<h3>Final Model 5</h3>
+<p><strong>Model 5 Report</strong></p>
+<p>Instead, optimally tuned with the parameters: n.trees = 250; interaction.depth = 15; shrinkage = 0.05; n.minobsinnode = 5 and with a final R2 of 87.9%, I proceed with stacking these 5 models into a single ensemble model.</p>
+<pre class="r"><code>model5_final &lt;- model5</code></pre>
+<p>Thus,</p>
+<pre class="r"><code># We can predict the testing values
+
+predictions_model5_final &lt;- predict(model5_final,test_data)
+
+model5_final_results &lt;-data.frame(RMSE = RMSE(predictions_model5_final, test_data$price), 
+                            R2 = R2(predictions_model5_final, test_data$price))
+
+model5_final_results                      </code></pre>
+<pre><code>##       RMSE        R2
+## 1 202438.3 0.8787629</code></pre>
+<pre class="r"><code>#We can predict prices for out of sample data the same way
+model5_final_predictions_oos &lt;- predict(model5_final,london_house_prices_2019_out_of_sample)</code></pre>
+</div>
+</div>
+</div>
+<div id="stacking-to-create-a-final-ensemble-model" class="section level1">
+<h1>Stacking to Create a Final Ensemble Model</h1>
+<pre class="r"><code>#I now combine the results of all 5 of these models
+multimodel &lt;- list(glmnet=model1_final, rpart=model2_final, knn=model3_final, ranger=model4_final, gbm=model5_final)
+class(multimodel) &lt;- &quot;caretList&quot;</code></pre>
+<pre class="r"><code>#I visualize the differences in performance of each algorithm for each fold, in terms of the key R2 metric
+  modelCor(resamples(multimodel))
+  dotplot(resamples(multimodel), metric = &quot;Rsquared&quot;)</code></pre>
+<p><img src="buffett_files/figure-html/visualize%20results-1.png" width="672" /></p>
+<pre class="r"><code>   xyplot(resamples(multimodel), metric = &quot;Rsquared&quot;)</code></pre>
+<p><img src="buffett_files/figure-html/visualize%20results-2.png" width="672" /></p>
+<pre class="r"><code>    splom(resamples(multimodel), metric = &quot;Rsquared&quot;)</code></pre>
+<p><img src="buffett_files/figure-html/visualize%20results-3.png" width="672" /></p>
+<pre class="r"><code>#we can now use stacking with the list of models
+
+final_ensemble_model &lt;- caretStack(multimodel,
+    trControl=control,method=&quot;glmnet&quot;,
+    metric = &quot;RMSE&quot;)</code></pre>
+<pre class="r"><code> summary(final_ensemble_model)</code></pre>
+<pre><code>##             Length Class      Mode     
+## a0           56    -none-     numeric  
+## beta        280    dgCMatrix  S4       
+## df           56    -none-     numeric  
+## dim           2    -none-     numeric  
+## lambda       56    -none-     numeric  
+## dev.ratio    56    -none-     numeric  
+## nulldev       1    -none-     numeric  
+## npasses       1    -none-     numeric  
+## jerr          1    -none-     numeric  
+## offset        1    -none-     logical  
+## call          5    -none-     call     
+## nobs          1    -none-     numeric  
+## lambdaOpt     1    -none-     numeric  
+## xNames        5    -none-     character
+## problemType   1    -none-     character
+## tuneValue     2    data.frame list     
+## obsLevels     1    -none-     logical  
+## param         0    -none-     list</code></pre>
+<pre class="r"><code>  predictions_ensemble &lt;- predict(final_ensemble_model,test_data)
+
+ensemble_results &lt;-data.frame(RMSE = RMSE(predictions_ensemble, test_data$price), 
+                            R2 = R2(predictions_ensemble, test_data$price))
+
+#I review the overall R2 performance and lambda value of my final stacked ensemble model
+ensemble_results</code></pre>
+<pre><code>##       RMSE        R2
+## 1 197457.5 0.8863383</code></pre>
+<pre class="r"><code>final_ensemble_model$ens_model$bestTune</code></pre>
+<pre><code>##   alpha   lambda
+## 7     1 916.5989</code></pre>
+<pre class="r"><code>#Since the model uses a LASSO formulation, I can also identify the relative importance of each constituent model for my final predictions
+coef(final_ensemble_model$ens_model$finalModel, final_ensemble_model$ens_model$bestTune$lambda)</code></pre>
+<pre><code>## 6 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                          1
+## (Intercept) -27433.4757398
+## glmnet           0.2200286
+## rpart            0.0279639
+## knn              0.1900819
+## ranger           .        
+## gbm              0.6144059</code></pre>
+</div>
+<div id="picking-a-portfolio-of-200-investments" class="section level1">
+<h1>Picking a Portfolio of 200 Investments</h1>
+<p>I now use this final ensemble model to pick the 200 best investments (on the basis of forecast profitability) from the out-of-sample data</p>
+<pre class="r"><code>numchoose=200
+
+oos&lt;-london_house_prices_2019_out_of_sample
+
+#predict the value of houses
+oos$predict &lt;- predict(final_ensemble_model,oos)
+
+#I first rank the properties in descending order of forecast profit margin
+oos_200 &lt;- oos %&gt;% 
+  mutate(profitMargin_forecast=(predict-asking_price)/asking_price) %&gt;% 
+  arrange(-profitMargin_forecast)
+
+#I then create a new column which codes them as 1 in a column called &#39;buy&#39; if I wish to buy them, 
+#and 0 if I do not, based on the criteria of selecting only the properties with the top 200 forecast profit margins
+oos_200$buy=0
+oos_200[1:numchoose,]$buy=1
+
+#I now drop the predict and profitMargin_forecast columns, leaving only 
+#the original OOS columns and the &#39;buy&#39; variable
+oos_final &lt;- oos_200 %&gt;% 
+  select(-predict,-profitMargin_forecast)
+
+#I output my choices in a .csv
+write.csv(oos_final,&quot;Lambert_Alberto.csv&quot;)
+
+#this .csv now contains the original 37 columns of the out of sample data, 
+#plus a final &#39;buy&#39; column marking the 200 properties with the highest forecast profit margin</code></pre>
+</div>
+<div id="estimating-portfolio-returns" class="section level1">
+<h1>Estimating Portfolio Returns</h1>
+<p>I now take the in-sample testing data (whose prices we know) and generate a random asking price in order to evaluate how much money my final algorithm (final ensemble model) can make. For the sake of simplicity I assume that asking price is within 20% of the actual price. Then I will run my algorithm to see how it does on this data.</p>
+<pre class="r"><code>numchoose=200
+
+set.seed(1234)
+
+random_mult&lt;-1/(1+runif(nrow(test_data), min = -0.2, max = 0.2))
+test_data$asking_price&lt;- test_data$price*random_mult
+
+
+#I predict the value of houses using my algorithm
+test_data$predict &lt;- predict(final_ensemble_model,test_data)
+
+#I find the profit margin given our predicted price and asking price
+test_data&lt;- test_data%&gt;%mutate(profitMargin=(predict-asking_price)/asking_price)%&gt;%arrange(-profitMargin)
+
+#I choose only the top 200 of them to invest in (i.e. the 200 with the highest profit margin)
+test_data$invest=0
+test_data[1:numchoose,]$invest=1
+
+#I now find the actual profit on the basis of the synthetic asking price
+test_data&lt;-test_data%&gt;%mutate(profit=(price-asking_price)/asking_price)%&gt;%mutate(actualProfit=invest*profit)
+
+#if we invest in everything, the percentage profit is -0.04%
+mean(test_data$profit)*100</code></pre>
+<pre><code>## [1] -0.04340326</code></pre>
+<pre class="r"><code>#if we just invest in the 200 we choose, the profit is approximately 7.50%
+sum(test_data$actualProfit)*100/numchoose</code></pre>
+<pre><code>## [1] 7.501943</code></pre>
+<pre class="r"><code>#However, note that these profit forecasts are highly sensitive to the random seed set, since the asking prices are synthetic and not actual</code></pre>
+<p>Consequently, while investing in all properties would yield my average return of 0% (which is likely an artefact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since these assumptions are weak, and expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.</p>
+</div>
