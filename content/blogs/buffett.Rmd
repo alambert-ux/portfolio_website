@@ -5,7 +5,7 @@ draft: false
 image: pic03.jpg
 keywords: ""
 slug: buffett
-title: Buffett
+title: Finance
 
 ---
 

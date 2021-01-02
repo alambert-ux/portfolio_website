@@ -1,11 +1,11 @@
 ---
 date: "2017-10-31T21:28:43-05:00" 
-description: "No Need to Panic, It's All Under Control... A Visual Critique of European Government's COVID-19 Response Strategies"
+description: "'No Need to Panic, It's All Under Control...' | A Visual Critique of European Government's COVID-19 Response Strategies"
 draft: false
 image: pic05.jpg
 keywords: ""
 slug: nightingale
-title: Nightingale
+title: Public Health
 
 ---
 

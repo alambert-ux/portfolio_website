@@ -58,9 +58,9 @@ disqusShortname = ""
       name = "Work"
       url = "post/khayyam"
 
-  # [[params.navigation.button2]]
-  #   name = "Projects"
-   #  url = "blogs"
+    [[params.navigation.button2]]
+     name = "Projects"
+     url = "blogs"
 
     #Button Style 1
     #[[params.navigation.button1]]
