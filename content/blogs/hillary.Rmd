@@ -19,7 +19,7 @@ title: Travel
 
 # Executive Summary
 
-See [this Presentation Deck](https://drive.google.com/file/d/1u1gsDwQgdQeGZ8KQDl14y-wV1-I7IK2M/view?usp=sharing "A Deep-Dive into Copenhagen's Holiday Rental Market") for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
+See [this Presentation Deck](https://drive.google.com/file/d/1u1gsDwQgdQeGZ8KQDl14y-wV1-I7IK2M/view?usp=sharing "A Deep-Dive into Copenhagen's Holiday Rental Market"){target="_blank"} for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
 
 ## Overview
 

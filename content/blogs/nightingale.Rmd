@@ -19,13 +19,13 @@ title: Public Health
  
 # Executive Summary  
 
-See [this Presentation Deck](https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing "A Visual Critique of European Government's COVID-19 Response Strategies") for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
+See [this Presentation Deck](https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing "A Visual Critique of European Government's COVID-19 Response Strategies"){target="_blank"} for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
 
 # The Problem 
  
 The global COVID-19 pandemic has defined the past year. With 63.3m cases causing 1.47m deaths worldwide, governments have fought relentlessly to contain the spread of the virus and reduce fatalities. While some have enforced stringent lockdowns for prolonged periods with high levels of social compliance, others have taken relaxed approaches in an effort to minimise the economic fallout. Since Europe represents a dense cluster of loosely affiliated, highly developed countries each governed autonomously, it is an optimal case study for understanding the role of policy in controlling the outbreak and minimising casualties. Guided by visual analysis, in this project we seek to identify patterns in the mitigation strategies of European governments, and ultimately identify best practices. 
 
-See my [interactive Tableau Dashboard](https://public.tableau.com/profile/alberto7149#!/vizhome/COVID-19Dashboard_16070923853150/COVID-19Dashboard "Investigating the Spread of COVID-19") to glean a better understanding of the spread and severity of the COVID-19 pandemic over time. 
+See my [interactive Tableau Dashboard](https://public.tableau.com/profile/alberto7149#!/vizhome/COVID-19Dashboard_16070923853150/COVID-19Dashboard "Investigating the Spread of COVID-19"){target="_blank"} to glean a better understanding of the spread and severity of the COVID-19 pandemic over time. 
 
 This study asks the exploratory question "What have European governments done to mitigate the spread of COVID-19?", before asking the more pressing follow-up: "How successful have these measures been at limiting cases and fatalities, and what be learned from both the greatest successes and failures?". Employing a breadth of visual and statistical techniques, including spatial mapping, time-series analysis, and linear regression, we compare the success of European governments in containing the fall-out from the global COVID-19 pandemic.  
 
@@ -43,14 +43,14 @@ This study asks the exploratory question "What have European governments done to
 
 **We employ 3 datasets in for analysis, each of which are cleaned individually, before being combined into a single data frame filtered only to European cases, covid_europe**
 
-main dataset -> owid-covid-data   
-https://covid.ourworldindata.org/data/owid-covid-data.csv
+### Main Dataset
+[owid-covid-data](https://covid.ourworldindata.org/data/owid-covid-data.csv "Our World in Data Covid Data"){target="_blank"} 
 
-hospital data -> data  
-https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19
+### Hospital Data
+[data](https://www.ecdc.europa.eu/en/publications-data/download-data-hospital-and-icu-admission-rates-and-current-occupancy-covid-19 "Hospital Data"){target="_blank"} 
 
-testing data -> covid-testing-all-observations  
-https://github.com/owid/covid-19-data/blob/master/public/data/testing/covid-testing-all-observations.csv
+### Testing Data
+[covid-testing-all-observations](https://github.com/owid/covid-19-data/blob/master/public/data/testing/covid-testing-all-observations.csv "COVID Testing Data"){target="_blank"} 
 
 # The Solution
 

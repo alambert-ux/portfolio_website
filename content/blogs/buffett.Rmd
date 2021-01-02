@@ -17,7 +17,7 @@ title: Finance
 
 # Executive Summary
 
-The full report of this project can be viewed as a PDF [here](https://drive.google.com/file/d/1-TaxOB3piOGm94pPR-RFQz3JoF2mvcPH/view?usp=sharing "This Place Costs That Much? Applying Ensemble Methods to Predict London House Prices").
+The full report of this project can be viewed as a PDF [here](https://drive.google.com/file/d/1-TaxOB3piOGm94pPR-RFQz3JoF2mvcPH/view?usp=sharing "This Place Costs That Much? Applying Ensemble Methods to Predict London House Prices"){target="_blank"}.
 
 # The Problem 
  
@@ -29,7 +29,7 @@ Seeking to build a maximally profitable property portfolio and evaluate whether 
 
 Throughout these analyses, two key datasets are utilised: the first, an in-sample datasets containing 36 variables representing house price characteristics, as well as the final sale price of the property; and the second, an out-of-sample dataset containing 36 (non-identical) variables, including the property's asking price - but not its final sale price. 
 
-See [this Tableau Story](https://public.tableau.com/profile/alberto7149#!/vizhome/LondonHousePricesStorytelling/ComparingtheImpactsofthe2008FinancialCrisisandCOVID-19PandemiconLondonHousePrices "London House Prices Storytelling") for a preliminary analyis and exploration of London house prices from a comparative perspective.
+See [this Tableau Story](https://public.tableau.com/profile/alberto7149#!/vizhome/LondonHousePricesStorytelling/ComparingtheImpactsofthe2008FinancialCrisisandCOVID-19PandemiconLondonHousePrices "London House Prices Storytelling"){target="_blank"} for a preliminary analyis and exploration of London house prices from a comparative perspective.
 
 # The Solution
 

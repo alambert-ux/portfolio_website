@@ -17,7 +17,7 @@ title: Entertainment
 
 # Executive Summary 
 
-The full reports for this project can be viewed as PDFs. See [Report 1](https://drive.google.com/file/d/1zxEOp_or8kaDXiYRs5ARM7F1FrVlhBeb/view?usp=sharing "Applying Cluster Analysis to Segment BBC iPlayer Users") for analysis of targetable clusters of BBC iPlayer users, and [Report 2](https://drive.google.com/file/d/1Xw5V0KCXi2RPeYuUyy7tVp-KKxfpIFZS/view?usp=sharing "Building and Evaluating Movie Recommendation Systems") for a step-by-step summary of the recommendation system construction and optimisation process.
+The full reports for this project can be viewed as PDFs. See [Report 1](https://drive.google.com/file/d/1zxEOp_or8kaDXiYRs5ARM7F1FrVlhBeb/view?usp=sharing "Applying Cluster Analysis to Segment BBC iPlayer Users"){target="_blank"} for analysis of targetable clusters of BBC iPlayer users, and [Report 2](https://drive.google.com/file/d/1Xw5V0KCXi2RPeYuUyy7tVp-KKxfpIFZS/view?usp=sharing "Building and Evaluating Movie Recommendation Systems"){target="_blank"} for a step-by-step summary of the recommendation system construction and optimisation process.
 
 # The Problem  
 
