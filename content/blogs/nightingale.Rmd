@@ -21,11 +21,11 @@ title: Public Health
  
 # Executive Summary  
 
-See [this Presentation Deck](https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing "A Visual Critique of European Government's COVID-19 Response Strategies"){target="_blank"} for a full report of this project, including a summary of the research process, key results and a brief project evaluation. 
+See [this Presentation Deck](https://drive.google.com/file/d/1dHAeGL2m-qiW2Y1bPKTi72TfIusdoo0o/view?usp=sharing "A Visual Critique of European Government's COVID-19 Response Strategies"){target="_blank"} for a full report of project report, including a summary of the research process, key results and a brief project evaluation. 
 
 # The Problem 
  
-The global COVID-19 pandemic has defined the past year. With 63.3m cases causing 1.47m deaths worldwide, governments have fought relentlessly to contain the spread of the virus and reduce fatalities. While some have enforced stringent lockdowns for prolonged periods with high levels of social compliance, others have taken relaxed approaches in an effort to minimise the economic fallout. Since Europe represents a dense cluster of loosely affiliated, highly developed countries each governed autonomously, it is an optimal case study for understanding the role of policy in controlling the outbreak and minimising casualties. Guided by visual analysis, in this project we seek to identify patterns in the mitigation strategies of European governments, and ultimately identify best practices. 
+The global COVID-19 pandemic has defined the past year. With 63.3m cases causing 1.47m deaths worldwide, governments have fought relentlessly to contain the spread of the virus and reduce fatalities. While some have enforced stringent lockdowns for prolonged periods with high levels of social compliance, others have taken relaxed approaches in an effort to minimise the economic fallout. Since Europe represents a dense cluster of loosely affiliated, highly developed countries each governed relatively autonomously, it is an optimal case study for understanding the role of policy in controlling the outbreak and minimising casualties. Guided by visual analysis, in this project we seek to identify patterns in the mitigation strategies of European governments, and ultimately identify best practices. 
 
 See my [interactive Tableau Dashboard](https://public.tableau.com/profile/alberto7149#!/vizhome/COVID-19Dashboard_16070923853150/COVID-19Dashboard "Investigating the Spread of COVID-19"){target="_blank"} to glean a better understanding of the spread and severity of the COVID-19 pandemic over time. 
 
@@ -56,7 +56,7 @@ This study asks the exploratory question "What have European governments done to
 
 # The Solution
 
-These analyses drive the conclusion that, though the efficacy of certain measures is highly country-specific, **stringent**, **stable** and **rapidly enacted (fast)** measures clearly predict how well national governments handled the crisis. Specifically, we find that the **timing** of government responses relative to the first nationwide outbreak (the first reported case) is the most important factor in determining their success in keeping cases down. This provides valuable lessons for governments as they battle the second and third waves of the pandemic and seek to overcome pandemics in future. 
+These analyses drive the conclusion that, though the efficacy of certain measures is highly country-specific, **stringent**, **stable** and **rapidly enacted** measures clearly predict how well national governments handled the crisis. Specifically, we find that the **timing** of government responses relative to the first nationwide outbreak (the first reported case) is the most important factor in determining their success in keeping cases down. This provides valuable lessons for governments as they battle the second and third waves of the pandemic and seek to overcome pandemics in future. 
 
 # **Analysis in R**
 
@@ -84,7 +84,7 @@ These analyses drive the conclusion that, though the efficacy of certain measure
 *Insights:*                     Deeper understanding of the type of policies underlying the stringency index, and their relative *ii) efficacy* and timing.    
 
 ### OBJECTIVE 4 (Plot 6) 
-**Empirically ratify hypothesised relationships between certain factors and COVID-19 cases drawn from Plots 1-5,rank these factors by importance, and evaluate country-level heterogeneity**  
+**Empirically ratify hypothesised relationships between certain factors and COVID-19 cases drawn from Plots 1-5, rank these factors by importance, and evaluate country-level heterogeneity**  
 
 *Outcomes:*                     Ordinary Least Squares (OLS) Linear Regression Model Which Provides Both Factor Coefficient Estimates and Ranks Factor Importance.    
 
@@ -187,7 +187,7 @@ hospital_data <- hospital_data_original %>%
 
 ## Dataset 1: owid-covid-data
 
-We start with the `covid_data`, which has 48 covid-related indicators of a country in a given date. From the `skim` below, we observe:
+We start with the `covid_data`, which has 48 covid-related indicators for any given country and date. From the `skim` below, we observe:
 
 * 17 completely empty columns 
 * Incompleteness in almost all columns
@@ -203,7 +203,7 @@ covid_data %>% get_dupes(date, iso_code) # no duplicates
 covid_data_clean <- remove_empty(covid_data, which = c("rows","cols")) # 17 columns and 0 rows removed
 ```
 
-We start to clean each columns. We can see there are some rows with `location = International`which makes our `iso_code` NA. Since our analysis mainly focus on each countries, we will delete these rows. For the `continent` variable, we found that its NA come from`location = 'World'`, which is actually derivable from other rows, thus we will delete them.
+We start to clean each column. We can see there are some rows with `location = International` which makes our `iso_code` NA. Since our analysis focuses on each *European* country, we delete these rows. For the `continent` variable, we found that its NA originatds from`location = 'World'`, which can actually be derived from other rows. Thus, we will delete them.
 
 ```{r dataset1 clean iso_code and continent,message=FALSE,results='hide',warning=FALSE}
 # NAs in iso_code
@@ -217,7 +217,7 @@ covid_data_clean <- covid_data_clean %>%
   filter(!is.na(continent))
 ```
 
-For the `gdp_per_capita` column, there are 28 countries/territories with missing values. And they are missing across all the days. We impute some of them, with data from world bank if it is availble, and leave the rest in NAs
+For the `gdp_per_capita` column, there are 28 countries/territories with missing values across all days. We impute some of them with data from world bank if it is available, and leave the rest as NAs.
 
 ```{r dataset1 clean gdp_per_capita,message=FALSE,results='hide',warning=FALSE}
 # check if the gdp_per_capita of countries are NA all the time 
@@ -240,13 +240,14 @@ covid_data_clean[covid_data_clean$location =='United States Virgin Islands','gdp
 
 skim(covid_data_clean)
 ```
+
 ##  Dataset 2: Hospital Data
 
 ```{r dataset2 skim,message=FALSE,results='hide',warning=FALSE}
 skim(hospital_data)
 ```
 
-We remove all rows with no indicator as we don't know what it would stand for in cases where `indicator` = NA, similarly we remove rows with NA in `value`
+We remove all rows with no indicator, and similarly remove rows with NA in `value`.
 
 ```{r dataset2 clean indicator and value,message=FALSE,results='hide',warning=FALSE}
 hospital_data_clean <- hospital_data %>%
@@ -255,7 +256,7 @@ hospital_data_clean <- hospital_data_clean %>%
   filter(!is.na(value))
 ```
 
-We then deselect some columns and pivot hospital data to a clean format
+We then deselect some columns and pivot the hospital data to a clean format.
 
 ```{r clean data format,message=FALSE,results='hide',warning=FALSE}
 
@@ -293,7 +294,8 @@ covid_testing_process %>%
   head(5)
 
 ```
-As we can observe there are two metrics: people tested and samples tested. Having browsed the source of the dataset we are not able to conclude which data is correct, thus we are going to take daily average for specific dates.   
+
+As we can observe there are two metrics: people tested and samples tested. Having browsed the source of the dataset we are not able to conclude which data is correct as a proxy for number of tests conducted, and thus take a daily average. 
 
 ```{r clean testing,message=FALSE,results='hide',warning=FALSE}
 
@@ -339,7 +341,7 @@ skim(covid_total)
 
 ```
 
-We observe that there are still quite a few missing values, however we are going to focus on Europe in our analysis.
+We observe that there are still quite a few missing values, however we are going to focus on Europe in our analysis, so this should not be greatly problematic.
 
 ```{r select europe,message=FALSE,results='hide',warning=FALSE}
 #filter for European countries
@@ -351,8 +353,10 @@ covid_europe <- covid_total %>%
   clean_names()
 
 skim(covid_europe)
+
 ```
-## Enriching dataset
+
+## Enriching the dataset
 
 We are going to enrich the dataset by defining the following variables:  
 
@@ -360,7 +364,7 @@ We are going to enrich the dataset by defining the following variables:
 - day0_deaths -> date when daily deaths first hit 100  
 - day0_cases_elapsed -> days elapsed from day_0_cases  
 - day0_deaths_elapsed -> days elapsed from day_0_deaths  
-- day0_difference -> days elapsed between daily cases first hit 1000 and daily deaths 100
+- day0_difference -> days elapsed between when daily cases first hit 1000 and when daily deaths hit 100
 
 ```{r enriching the dataset,message=FALSE,results='hide',warning=FALSE}
 
@@ -427,15 +431,16 @@ covid_europe <- covid_europe_process3
 #clean temporary objects
 
 rm(calc_day0,covid_europe_process, covid_europe_process2, covid_europe_process3)
+
 ```
 
 Adjustments made in the following two plots:
 
-1. We changed the date to most recent instead of Nov 24 2020 to avoid NAs, because some countries may not have yet reported their cases in that day
+1. We changed the date to most recent instead of Nov 24 2020 to avoid NAs, because some countries may not have yet reported their cases on the most recent day in the entire dataset
 2. We changed the color scale, using  https://gka.github.io/palettes/#/9|s|ffffe0,920000|ffffe0,ff005e,93003a|1|1
 3. We added some country names on the map. If we show all of them that would be too busy. We can adjust the names of the countries we want to show by changing the `country_list`
 
-#Building Visualisations to Tell Our Story
+# Building Visualisations to Tell Our Story
 
 We begin by setting the scene of the 'state of COVID=19' in Europe, before exploring the relationship between government measures and deaths/cases, and delving into 6 distinct country case studies to understand how specific public policy decisions have translated into COVID-19 outcomes. Finally, we build a predictive model using OLS Regression.
 
@@ -515,7 +520,6 @@ map_total
 ```
 
 ![](/blogs/nightingale_files/fig01.png)
-
 
 ## Plot 2 - Map of COVID-19 Cases Across Europe, by Wave
 
@@ -677,9 +681,9 @@ death_stringency
 
 ## Plot 5a (Wave 1) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
-**Again, we designed these visualisations as time-series, since Plots 3 and 4 demonstrated to us that timing, as well as stringency, seemed to be strongly related to outcomes in terms of cases and deaths**
+**Again, we designed these visualisations as time-series, since Plots 3 and 4 demonstrated to us that timing, as well as stringency, seem to be strongly related to outcomes in terms of cases and deaths**
 
-**Given that we also observe substantial differences in the stories told by Cases and Deaths in the first wave, in plots 3 and 4, we also thought it important to include COVID-19 testing data, to ensure that though we were evaluating case evolution, we were weary of the biases associated with different levels of national testing**
+**Given that we also observe substantial differences in the stories told by Cases and Deaths in the first wave, in Plots 3 and 4, we thought it important to include COVID-19 testing data, to ensure that though we were evaluating case evolution, we were weary of the biases associated with different levels of national testing**
 
 ```{r daily_test_change,message=FALSE,results='hide',warning=FALSE}
 covid_europe <- covid_europe %>% 
@@ -893,7 +897,7 @@ annotate_figure(wave1,
 
 ## Plot 5b (Wave 2) - Deep-Dive into 6 Specific Case Studies Representing Characteristically Distinct Government Responses to the Pandemic
 
-**Given that we wanted to evaluate government's strategies holistically, we felt separating these deep-dive time-series into first and second waves, to allow identification both of how countries' strategies evolved and direct comparison of their strategies in each wave, was optimal**
+**Given that we wanted to evaluate government's strategies holistically, we felt separating these deep-dive time-series into first and second waves was optimal, since it allows us to identify both of how countries' strategies evolved and directly compare their strategies in each wave**
 
 ```{r uk_2wave,message=FALSE,results='hide',warning=FALSE}
 uk_2wave  <- covid_europe %>% 

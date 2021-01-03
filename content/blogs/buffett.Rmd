@@ -23,23 +23,23 @@ The full report of this project can be viewed as a PDF [here](https://drive.goog
 
 # The Problem 
  
-London is the 8th most expensive city in the world to buy property. Yet, the emergence of new “hot spots” as the city and its transport networks expand means that its property market still promises ample investment opportunities. I seek to answer the questions “Which 200 London properties should I buy to maximize profit?”, and “How can profit opportunities be identified in neighborhoods served by Crossrail?”.
+London is the 8th most expensive city in the world to buy property. Yet, the emergence of new “hot spots” as the city and its transport networks expand means that its property market still promises ample investment opportunities. I seek to answer the questions Which 200 London properties should I buy to maximize profit?”, and “How can profit opportunities be identified in neighborhoods served by Crossrail?”.
 
-Seeking to build a maximally profitable property portfolio and evaluate whether Crossrail promises further profit opportunities for nearby property-holders, I provide a comprehensive methodology for the specification, optimization, application of an ensemble model designed to predict London house prices. 
+Seeking to build a maximally profitable property portfolio and evaluate whether Crossrail promises further profit opportunities for nearby property-holders, I provide a comprehensive methodology for the specification, optimization and application of an ensemble model designed to predict London house prices. 
 
 # The Data
 
-Throughout these analyses, two key datasets are utilised: the first, an in-sample datasets containing 36 variables representing house price characteristics, as well as the final sale price of the property; and the second, an out-of-sample dataset containing 36 (non-identical) variables, including the property's asking price - but not its final sale price. 
+Throughout these analyses, two key datasets are utilised: the first, an in-sample dataset containing 36 variables representing house price characteristics, as well as the final sale price of the property; and the second, an out-of-sample dataset containing 36 (non-identical) variables, including the property's asking price - but not its final sale price. 
 
 See [this Tableau Story](https://public.tableau.com/profile/alberto7149#!/vizhome/LondonHousePricesStorytelling/ComparingtheImpactsofthe2008FinancialCrisisandCOVID-19PandemiconLondonHousePrices "London House Prices Storytelling"){target="_blank"} for a preliminary analyis and exploration of London house prices from a comparative perspective.
 
 # The Solution
 
-Using a dataset of the actual sale prices and characteristics of 13,998 properties, I train and stack five predictive models, tuning both features and parameters to minimize Root Mean Square Error (RMSE) and build a final ensemble. 
+Using the in-sample dataset including the actual sale prices and characteristics of 13,998 properties, I train and stack five predictive models, tuning both features and parameters to minimize Root Mean Square Error (RMSE) and build a final ensemble. 
 
 Harnessing this model, I predict prices in a new sample of 1999 houses. By comparing these predictions with corresponding asking prices, I forecast each property's profitability and construct my portfolio by selecting only the 200 most profitable properties.
 
-My final ensemble model, which consists of a stack of all models except Model 4, has a high R2 of 88.63%. Consequently, while investing in all properties would yield my average return of 0% (which is likely an artefact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since these assumptions are weak, and expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.
+My final ensemble model, which consists of a stack of all models except Model 4, has a high R2 of 88.63%. Consequently, while investing in all properties would yield my average return of 0% (which is likely an artifact of the random approach to specifying synthetic Asking Prices), I expect my select portfolio to outperform this by approximately 7.50%. However, since expected return is highly sensitive to random specification of asking prices, this is more an indication that my portfolio will be profitable, than an accurate profit estimate.
 
 # **Analysis in R**
 
@@ -47,7 +47,7 @@ My final ensemble model, which consists of a stack of all models except Model 4,
 
 ## **Which London Houses Promise the Highest Yield Property Portfolio?**
 
-*Note: because of the computational intensity of some of the models, I knit my .Rmd using a pre-loaded environment, rather than re-running all models.*
+*Note: because of the computational intensity of some models, I knit my .Rmd using a pre-loaded environment, rather than re-running all models.*
 
 ```{r setup, include=FALSE}
 
@@ -178,7 +178,7 @@ Now the data has been imported and transformed successfully:
 
 ## Preparing the Data for Model Specification
 
-I now prepare the clean data to be suitable for modelling and oos prediction. 
+I now prepare the clean data to be suitable for modelling and out-of-sample (oos) prediction. 
 
 ```{r preparing the data, message=FALSE, warning=FALSE, results='hide'}
 
@@ -244,11 +244,11 @@ test_data <- testing(train_test_split)
 
 I now visualise the data in order to get a better impression of the distribution of price across houses. 
 
-**Visualize and examine the data. What plots could be useful here? What do you learn from these visualizations?**
+**Visualizing and examining the data**
 
 I find that a Histogram, Boxplot and Scatterplot each give me a good preliminary understanding of the key drivers of house prices, and how house prices are distributed.
 
-Notably, I learn from the histogram that though the vast majority of houses are under £1 million, there are a number of notable outliers which sold for up to £9 million. Investigating this strong positive skew further via a boxplot, I find that  the greatest positive skew in prices is amongst Terraced properties, and that Detached properties command the highest median prices. Finally, I use a scatterplot to identify both the relationship between income and house prices, and also to identify how this relationship is heterogeneous across property types. Though I find that the type of property is associated with the price obtained for it, I also find that the relationship between property price and income is relatively constant (constant gradient) across all house types. 
+Notably, I learn from the histogram that though the vast majority of houses are under £1 million, there are a number of notable outliers which sold for up to £9 million. Investigating this strong positive skew further via a boxplot, I find that the greatest positive skew in prices is amongst Terraced properties, and that Detached properties command the highest median prices. Finally, I use a scatterplot to identify both the relationship between income and house prices, and also to identify how this relationship is heterogeneous across property types. Though I find that the type of property is associated with the price obtained for it, I also find that the relationship between property price and income is relatively constant (constant gradient) across all house types. 
 
 ```{r visualize_boxplot, fig.height=10,fig.width=15, message=FALSE, warning=FALSE}
 
@@ -268,7 +268,7 @@ ggplot(train_data,aes(x=total_floor_area, y=price, color=property_type))+geom_po
 
 ```
 
-**Estimate a correlation table between prices and other continuous variables. What do you glean from the correlation table?**
+**Estimating a correlation table between prices and other continuous variables**
 
 ```{r, correlation table, warning=FALSE, message=FALSE, fig.height=7, fig.width=7, fig.align="center"}
 
@@ -296,11 +296,11 @@ I find that there are moderate **negative** correlations (<=-0.30)between:
 - longitude and average_income (-0.34)
 - latitude and num_rail_lines (-0.45)
 
-The majority of these relationships are self-explanatory: we expect current and potential co2 emissions to be related positively; we expect co2 emissions and house size (number of rooms, total floor area) to be related positively; and we expect price and house size to be related positively. Further, since London zones increase as distance from the city center increases, we naturally expect london zone and price to be negatively correlated, and london zone and number of tube lines to be negatively correlated. It is also intuitive that the more tube lines there are, the fewer rail lines, and vice versa. This too is a product of being closer to or further from the city center - the closer to the center, the more tube lines and the fewer rail lines. Latitutde and longitude relationships are more interesting and unexpected: average income falls as longitude increases, meaning that the more East a property, the lower the average income of its buyer, and since latitude is negatively correlated with number of rail lines, the more north a property, the fewer rail lines present. 
+The majority of these relationships are self-explanatory: we expect current and potential co2 emissions to be related positively; we expect co2 emissions and house size (number of rooms, total floor area) to be related positively; and we expect price and house size to be related positively. Further, since London zones increase in number as distance from the city center increases, we naturally expect London zone and price to be negatively correlated, and London zone and number of tube lines to be negatively correlated. It is also intuitive that the more tube lines there are, the fewer rail lines, and vice versa. This too is a likely product of being closer to or further from the city center - the closer to the center, the more tube lines and the fewer rail lines. Latitude and longitude relationships are more interesting and unexpected: lower average income is associated with higher longitude, meaning that the more East a property, the lower the average income of its buyer, and since latitude is negatively correlated with number of rail lines, the more north a property, the fewer rail lines present. 
 
 # Training Prediction Algorithms
 
-In order to run m prediction algorithms, I take the following approach, focusing first on Features, and then on Model Tuning:
+In order to run prediction algorithms, I take the following approach, focusing first on Features, and then on Model Tuning:
 
 **Model Features**
 
@@ -371,7 +371,7 @@ importance_example_lm <- varImp(example_lm, scale=TRUE)
 plot(importance_example_lm)
 
 ```
-In this generic model, longitude is the most important predictor of house prices, followed by Thames water company, Terraced property type and Semidetached property type. These are not obvious predictors, but their importance makes sense: Thames water covers the core city of london, and is therefore a proxy for centrality in the city, whcih we expect to be strong associated with house prices. This is also consistent with my exploratory visualizations, where I identified the Terraced property type as strongly related to higher house prices. 
+In this generic model, longitude is the most important predictor of house prices, followed by Thames Water Company, Terraced property type and Semidetached property type. These are not obvious predictors, but their importance makes sense: Thames Water covers the core City of London, and is therefore a proxy for centrality in the city, which we expect to be strongly associated with house prices. This is also consistent with my exploratory visualizations, where I identified the Terraced property type as strongly related to higher house prices. 
 
 ### Predict the Values in Testing and Out of Sample Data
 
@@ -394,7 +394,7 @@ example_lm_predictions_oos <- predict(example_lm,london_house_prices_2019_out_of
 
 **How can you measure the quality of your predictions?**
 
-I measure the quality of my predictions via Root Mean Square Error and R-Square on the testing data set. The model which minimises RMSE and maximises R2 on the testing data is the highest performing model, which makes the highest quality predictions (with the least error).
+I measure the quality of my predictions via Root Mean Square Error and R-Squared (R2) on the testing data set. The model which minimises RMSE and maximises R2 on the testing data is the highest performing model, which makes the highest quality predictions (with the least error).
 
 ## Selecting Features to Run the Algorithms On
 
@@ -533,6 +533,7 @@ I now test each Model using only the subset of important variables identified vi
 
 ```{r final_equation, message=FALSE, warning=FALSE, results='hide'}
 
+#15 core predictors
 final_equation <- 
 price~
 total_floor_area+
@@ -550,7 +551,8 @@ altitude+
 property_type+
 energy_consumption_potential+
 num_tube_lines+
-  
+
+#15 interaction terms
 total_floor_area*average_income+
 total_floor_area*london_zone+
 total_floor_area*property_type+
@@ -571,7 +573,7 @@ number_habitable_rooms*co2_emissions_potential
 
 **Model Specification Process**
 
-I decide to proceed with all variables in the final_equation specification for my subsequent models, and take the following steps in order to optimise them on the basis of selected features and optimally tune them:
+I decide to proceed with all variables in the final_equation specification for my subsequent models, and take the following steps in order to optimise them on the basis of selected features parameter tuning:
 
 1. run the model on final_equation and tune its parameters
 2. identify the most important variables (using the cliff in importance as a sensible cut-off)
@@ -721,7 +723,7 @@ model1_predictions_oos <- predict(model1_cliff,london_house_prices_2019_out_of_s
 
 **Model 1 Report**
 
-As would be expected (given that LASSO penalises low-importance variables), running LASSO with only the top 8 predictors has little effect on its R2 result - worsening predictive power very slightly. Since LASSO is itself a feature selection approach, the features of the final model are specified by the final_equation, including 15 Boruta-defined variables, plus interactions. The tuning parameters are as follows: Alpha = 1 (LASSO Regression), Lambda = 202.0202. I find that Model 1 has an R2 of 84.50% and RMSE of 230754, meaning that it substantially outperforms the generically specified linear regression model, which had an R2 of 17.17%. 
+As would be expected (given that LASSO penalises low-importance variables), running LASSO with only the top 8 predictors has little effect on its R2 result - worsening predictive power very slightly. Since LASSO is itself a feature selection approach, the features of the final model are specified by the final_equation, including 15 Boruta-defined variables, plus interactions. The tuning parameters are as follows: Alpha = 1 (LASSO Regression), Lambda = 202.0202. I find that Model 1 has an R2 of 84.50% and RMSE of 230754.
 
 ```{r Model 1 Final}
 
@@ -929,7 +931,6 @@ plot(model3)
 
 ```
 
-
 ### Model 3 Variable Importance
 
 ```{r Model 3 Variable Importance, fig.height=5, message=FALSE, warning=FALSE}
@@ -1043,7 +1044,7 @@ model3_final_predictions_oos <- predict(model3_final,london_house_prices_2019_ou
 
 ## Model 4 - Random Forest
 
- Parameters for random forest models in the ranger function that implements random forest
+ Parameters for random forest models in the ranger function that implements random forest:
  
  i) TUNED 1 | 'mtry': number of randomly chosen variables to do a split each time 
  ii) TUNED 2 | min.node.size: Minimum size allowed for a leaf (default is 5 for regression)
@@ -1181,6 +1182,7 @@ model4_predictions_oos <- predict(model4_cliff,london_house_prices_2019_out_of_s
 Since the R2 of the model run only on all the final_equation variables is marginally higher than that of the model trained on the smaller subset of important variables, I proceed with the full model as my final model 4. However, as a final tuning step for Model 4, I also tune the optimal number of trees using the function below.
 
 ### Tuning the Optimal Number of Trees for Model 4
+
 ```{r Model 4 Tuned Trees,eval=FALSE}
 
 set.seed(1234)
@@ -1334,7 +1336,7 @@ iv) n.minobsinnode: the minimum number of training set samples in a node to stop
 
 ### Generic GBM
 
-I first try a generic GBM using the parameters provided in the workshop. 
+I first try a generic GBM using recommended parameters.. 
 
 ```{r Model 5 - Gradient Boosting Machine, eval=FALSE}
 
