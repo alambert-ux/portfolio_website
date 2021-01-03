@@ -369,8 +369,8 @@ Cluster 2 is effectively the opposite of Cluster 1 in their watching behaviour. 
 <p>I plot a scatter plot for the viewers with respect to total_Time and weekend variables with color set to the cluster number of the user.</p>
 <pre class="r"><code>ggplot(userdata_sel_clusters, aes(x = total_Time, y = weekend, color =  as.factor(cluster))) +
   geom_jitter(alpha=0.8)+labs(color = &quot;Cluster&quot;, x=&quot;Total Time&quot;,y=&quot;Weekend&quot;, title=&quot;Total Time Watched has a Strong Impact on Determining Clusters of Viewers&quot;, subtitle=&quot;Heterogeneity Across Weekend Viewing and Total Viewing Time Variables Between Clusters&quot;) + theme_fivethirtyeight() + theme(axis.title=element_text())</code></pre>
-<p><img src="/blogs/scorsese_files/figure-html/distribution_wrt_variables-1.png" width="960" />
-I observe that most of points are located in the lower part of the graph, which suggests that the Weekend variable is not that crucial in determining clusters. Evidently, total_Time plays a more prominent role, since points are more dispersed along the x-axis, with Cluster 1 appearing to have a higher average level of total_Time than Cluster 2.</p>
+<p><img src="/blogs/scorsese_files/figure-html/distribution_wrt_variables-1.png" width="960" /></p>
+<p>I observe that most of points are located in the lower part of the graph, which suggests that the Weekend variable is not that crucial in determining clusters. Evidently, total_Time plays a more prominent role, since points are more dispersed along the x-axis, with Cluster 1 appearing to have a higher average level of total_Time than Cluster 2.</p>
 </div>
 <div id="clusters-vs-pca-components" class="section level3">
 <h3>Clusters vs PCA components</h3>
@@ -451,8 +451,8 @@ fviz_cluster(model_kmeans_2clustersv2, userdata_selv2, palette = &quot;Set2&quot
 <h2>Silhouette method</h2>
 <p>As another robustness check, I also use the silhouette method to identify a reasonable range for the number of clusters.</p>
 <pre class="r"><code>fviz_nbclust(userdata_sel, kmeans, method = &quot;silhouette&quot;,k.max = 20)+labs(title=&quot;Optimal Number of Clusters&quot;, subtitle = &quot;Silhouette Method&quot;, x=&quot;Number of Clusters, k&quot;, y=&quot;Average Silhouette Width&quot;) + theme_fivethirtyeight() + theme(axis.title = element_text()) + scale_y_continuous(breaks=seq(0,0.20,0.05), limits=c(0,0.20))</code></pre>
-<p><img src="/blogs/scorsese_files/figure-html/silhouette-1.png" width="960" />
-The silhouette plot recommends k = 13 as the optimal number of clusters for my analysis. This is because, when k = 13, the average silhouette width is maximised, which means that, on average, observations are best matched to their own cluster and poorly matched to all other clusters.</p>
+<p><img src="/blogs/scorsese_files/figure-html/silhouette-1.png" width="960" /></p>
+<p>The silhouette plot recommends k = 13 as the optimal number of clusters for my analysis. This is because, when k = 13, the average silhouette width is maximised, which means that, on average, observations are best matched to their own cluster and poorly matched to all other clusters.</p>
 <blockquote>
 <p>Optimal number of clusters</p>
 </blockquote>
@@ -1331,7 +1331,7 @@ ggplot(RMSE_data_longer, aes(x=number_ratings,y=RMSE,colour=recommendationSystem
   scale_y_continuous(breaks=seq(0.70,1.55,0.05),limits=c(0.70,1.55))+
   scale_x_continuous(breaks=c(10,20,50,100,200),limits=c(0,200))+
   geom_point()</code></pre>
-<p><img src="/blogs/scorsese_files/figure-html/RMSE_plot_3models_5samples-1.png" width="960" />
-On the basis of the RMSE’s above, my recommended recommendation system (which minimises RMSE) is: LIBMF, trained on a subset of the data including only movies that have been rated at least 50 times, and users that have given at least 50 ratings.</p>
+<p><img src="/blogs/scorsese_files/figure-html/RMSE_plot_3models_5samples-1.png" width="960" /></p>
+<p>On the basis of the RMSE’s above, my recommended recommendation system (which minimises RMSE) is: LIBMF, trained on a subset of the data including only movies that have been rated at least 50 times, and users that have given at least 50 ratings.</p>
 </div>
 </div>

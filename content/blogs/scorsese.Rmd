@@ -440,6 +440,8 @@ ggplot(userdata_sel_clusters, aes(x = total_Time, y = weekend, color =  as.facto
   geom_jitter(alpha=0.8)+labs(color = "Cluster", x="Total Time",y="Weekend", title="Total Time Watched has a Strong Impact on Determining Clusters of Viewers", subtitle="Heterogeneity Across Weekend Viewing and Total Viewing Time Variables Between Clusters") + theme_fivethirtyeight() + theme(axis.title=element_text())
 
 ```
+
+  
 I observe that most of points are located in the lower part of the graph, which suggests that the Weekend variable is not that crucial in determining clusters. Evidently, total_Time plays a more prominent role, since points are more dispersed along the x-axis, with Cluster 1 appearing to have a higher average level of total_Time than Cluster 2. 
 
 ### Clusters vs PCA components
@@ -545,6 +547,8 @@ As another robustness check, I also use the silhouette method to identify a reas
 fviz_nbclust(userdata_sel, kmeans, method = "silhouette",k.max = 20)+labs(title="Optimal Number of Clusters", subtitle = "Silhouette Method", x="Number of Clusters, k", y="Average Silhouette Width") + theme_fivethirtyeight() + theme(axis.title = element_text()) + scale_y_continuous(breaks=seq(0,0.20,0.05), limits=c(0,0.20))
 
 ```
+  
+  
 The silhouette plot recommends k = 13 as the optimal number of clusters for my analysis. This is because, when k = 13, the average silhouette width is maximised, which means that, on average, observations are best matched to their own cluster and poorly matched to all other clusters. 
 
 > Optimal number of clusters
@@ -791,7 +795,7 @@ res.hc.wardD <-  hcut(res.dist, hc_method = "ward.D", k=3)
 
 ```
 
-```{r 2methods_of_h-cluster, fig.width=12}
+```{r 2methods_of_h-cluster, fig.width=12, fig.height=20}
 
 res.hc.avg$size
 res.hc.wardD$size
@@ -1587,4 +1591,5 @@ ggplot(RMSE_data_longer, aes(x=number_ratings,y=RMSE,colour=recommendationSystem
   geom_point()
   
 ```
+  
 On the basis of the RMSE's above, my recommended recommendation system (which minimises RMSE) is: LIBMF, trained on a subset of the data including only movies that have been rated at least 50 times, and users that have given at least 50 ratings. 

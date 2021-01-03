@@ -13,7 +13,7 @@ title: Finance
 
 
 <p><em>“Someone’s sitting in the shade today because someone planted a tree a long time ago.”</em></p>
-<p>`- Buffett, Warren | iconic American investor, business tycoon and philanthropist``</p>
+<p><code>- Buffett, Warren | iconic American investor, business tycoon and philanthropist</code></p>
 <div id="this-place-costs-that-much" class="section level1">
 <h1><strong>This Place Costs That Much?</strong></h1>
 <div id="applying-ensemble-methods-to-predict-london-house-prices" class="section level2">
@@ -387,10 +387,10 @@ head(imps2[order(-imps2$meanImp), ])  # descending sort
 
 #I obtain a confirmed formula, and find (unhelpfully) that it includes all 26 predictors
 boruta_confirmed &lt;- getConfirmedFormula(boruta_output)
-print(boruta_confirmed)
-
-#I now plot variable importance to apply my &#39;cliff&#39; feature selection approach
+print(boruta_confirmed)</code></pre>
+<pre class="r"><code>#I now plot variable importance to apply my &#39;cliff&#39; feature selection approach
 plot(boruta_output, cex.axis=.35, las=2, lwd=1,xlab=&quot;&quot;, main=&quot;Boruta Algorithm | Variable Importance&quot;)</code></pre>
+<p><img src="/blogs/buffett_files/figure-html/Boruta%20output-1.png" width="672" /></p>
 <p>Notably, the Boruta algorithm ratifies my inclusion of total_floor_area despite collinearity risks, since this variable is demonstrated to be the most important predictor of all.</p>
 <p><strong>Boruta-Defined Subset</strong></p>
 <p>Though the Boruta algorithm demonstrates that all 26 features, captured by the equation ‘boruta_confirmed’, are relevant, in order to narrow down the number of features further, I select the following subset of the 15 most important variables from the 26 non-redundant, overlapping (between in-sample and out-of-sample datasets) variables specified above. Specifically, I identify a clear ‘cliff’ in importance following num_tube_lines. Therefore, I select all variables with a higher importance than type_of_closest_station.</p>

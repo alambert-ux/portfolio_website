@@ -10,7 +10,7 @@ title: Finance
 ---
 *"Someone's sitting in the shade today because someone planted a tree a long time ago."*  
   
-  `- Buffett, Warren | iconic American investor, business tycoon and philanthropist``
+  `- Buffett, Warren | iconic American investor, business tycoon and philanthropist`
 
 # **This Place Costs That Much?** 
 
@@ -491,11 +491,16 @@ head(imps2[order(-imps2$meanImp), ])  # descending sort
 #I obtain a confirmed formula, and find (unhelpfully) that it includes all 26 predictors
 boruta_confirmed <- getConfirmedFormula(boruta_output)
 print(boruta_confirmed)
+```
+
+```{r Boruta output}
 
 #I now plot variable importance to apply my 'cliff' feature selection approach
 plot(boruta_output, cex.axis=.35, las=2, lwd=1,xlab="", main="Boruta Algorithm | Variable Importance")
 
+
 ```
+
 Notably, the Boruta algorithm ratifies my inclusion of total_floor_area despite collinearity risks, since this variable is demonstrated to be the most important predictor of all. 
 
 **Boruta-Defined Subset**
