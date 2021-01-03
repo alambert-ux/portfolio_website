@@ -8,8 +8,9 @@ slug: khayyam
 title: Life 
 
 ---
-**"Be happy for this moment. This moment is your life."**  
-*- Khayyam, Omar: eminent Persian polymath across the fields of mathematics, astronomy, philosophy and poetry.*
+*"Be happy for this moment. This moment is your life."*   
+  
+  `- Khayyam, Omar | eminent Persian polymath across the fields of mathematics, astronomy, philosophy and poetry`
 
 # Born in Norfolk, Raised Around the World
 

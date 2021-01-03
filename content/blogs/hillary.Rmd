@@ -8,8 +8,9 @@ slug: hillary
 title: Travel
 
 ---
-**"No one remembers who climbed Mount Everest the second time.**  
-*- Hillary, Edmund: legendary New Zealand mountaineer, explorer and philanthropist, and leader of the first expedition to summit Mount Everest*
+*"No one remembers who climbed Mount Everest the second time."*  
+  
+  ``- Hillary, Edmund | legendary New Zealand mountaineer, explorer and philanthropist, and leader of the first expedition to summit Mount Everest``
 
 # **Airbnb Analytics** 
 
@@ -65,7 +66,7 @@ In summary, our "best", or optimal, model has the following characteristics:
 
 - Predictors across 4 key categories: Facility & Location, Host & Reviews, Flexibility and Amenities
 - The least overfitting of all models tested
-- No concerning collinearity 
+- No problematic collinearity 
 - A point estimate for the price of a 4-night stay in Copenhagen for 2 people of $1949 with a confidence interval of $1309 to $2597
 
 # **Analysis in R**
@@ -719,7 +720,7 @@ skim(listings_necessary)
 ```
 skim() shows us that there are 31 'numeric' variables and 7 'factor' variables. We summarise their names in tables in the subsequent sub-section.
 
-## Visualizations:
+## Variable Visualisations
 
 We create three different lists, summarising with numeric, logical and factor variables, respectively.
 
