@@ -1,58 +1,25 @@
 ---
 date: "2017-10-31T22:42:51-05:00"
-description: "Work"
+description: "Life"
 draft: false
-image: pic01.jpg   
+image: pic02.jpg 
 keywords: ""
 slug: khayyam
-title: Work   
+title: Life 
 
 ---
+**"Be happy for this moment. This moment is your life."**  
+*- Khayyam, Omar: eminent Persian polymath across the fields of mathematics, astronomy, philosophy and poetry.*
 
-# The Story So Far... 
+# Born in Norfolk, Raised Around the World
 
-For a brief summary of my personal and professional experience, see my most recent [Curriculum Vitae](https://drive.google.com/file/d/12SyD72Co9dRg4MpBBCtA92TIyoUoLI9t/view?usp=sharing "Alberto Lambert - Curriculum Vitae"){target="_blank"}.
+## Inspiration
+My natural intellectual curiosity manifests itself creatively as well as professionally. I take pleasure both in mastering the pursuits I choose and sharing them with others. It is paradoxical that my longest standing hobbies are those I am unable to enjoy daily, such as dinghy sailing, yachting and classical guitar playing, which I maintain but rarely have the opportunity to develop further. 
 
-# Ambitions and Foundations
+## Balance 
+My most “regular” activities are those which have established themselves as my daily routine. From my London home next to the LBS campus, I run most mornings through Regent’s Park to watch sunrise from Primrose Hill. The regularity of pace recalibrates and energises me. I meditate, employing visualisation to restore clarity to my approach and ground myself during the busyness of daily life. 
 
-I aspire to a career in product management and deployment strategy for world-leading enterprise, bringing together cutting-edge technology and analytics to promote global development and human advancement. 
+## Beauty
+My greatest passions have become those which deepen the relationships I have with those around me, and can be enjoyed together. My interest in horology and design led me to broaden my reading and connect with industry players such as Audemars Piguet. Initially a diversified asset, my passion for art has grown considerably over the past few years. Aged eighteen I invested funds earnt through my work to purchase a David Yarrow limited print, having first read about him back in 2015, in a life-defining GQ article featuring prominent European hedge fund managers. Subsequently, I have expanded my collection to include a number of paintings by globally renowned hyperrealist, Mike Dargas. Developing a close relationship with Maddox Gallery and its artists, I enjoy the refreshing contrast between creative industry and traditional business – and have realised the two are far more aligned than one might imagine. 
 
-Whilst developing strategic research for Sana Labs, a growth-stage AI company with a vision of democratising personalised education, I began to understand the potential for analytics to create scalable, tangible change. By articulating our project through a TED talk and implementing our product through numerous proofs of concept, deep-dive frameworks, and deployments, I realised the impact our algorithms had on companies at a global scale. These experiences have empowered me not only to build analytically transparent models, but to articulate myself persuasively and effectively to implement successful product strategies. 
-
-Combined with robust foundations in financial services, having conducted equity research on both the Sell-Side, for behemoth Goldman Sachs, and the Buy-Side, at prominent European hedge fund, Odey Asset Management, as well as economic theory, as a teacher of Development Economics at University College London, I believe that I am well placed to build successful, world-changing products. 
-
-Harnessing this breadth of experience across business strategy, analytics, finance, and economic theory, I endeavour to collaborate globally and innovatively to measurably improve lives, developing and proliferating intelligent solutions to enduring humanitarian problems.
-
-# Experience
-
-## 1. Financial Services 
-
-* Global Investment Research Summer Analyst @ Goldman Sachs
-* Summer Intern @ Odey Asset Management, global hedge fund
-* Global Investment Research Spring Intern @ Goldman Sachs
-* Asset Management Summer Intern @ Ruffer LLP, global hedge fund
-* Asset Management Summer Intern @ Henderson Rowe, ultra-high net worth fund management
-
-## 2. Technology
-
-* Business Analyst @ Sana Labs, pioneer in AI-for-education  
-* Pro Bono Consultant @ Depop, pioneer of social commerce  
-
-## 3. Academia 
-
-* Postgraduate Tutor of Development Economics @ University College London, supervised directly by Professor Beatriz Amendariz  
-
-## 4. Nonprofit & Volunteering
-
-* Director of Partnerships @ London Strategic Consulting, London's foremost student-led pro bono consultancy  
-* Banking Mentor @ Sponsors for Education Opportunity (SEO) London  
-* Summer Internship Mentor @ University College London Investment Society  
-* Spring Internship Mentor @ University College London Economics & Finance Society  
-* Private Tutor and Mentor @ Wymondham College  
-
-# Education
-
-* London Business School - M.Sc. Analytics and Management - `2021 Merit Scholar`  
-* University College London - B.Sc. Political Science and Economics with Data Science - `First Class Honours, All Years`  
-* Wymondham College - A-Level (`3A*`) 
-* Wymondham College - GCSE (`13A*`) 
+Together with an inherent love for world travel, these endeavors culminate in rich conversation across cultures, and immediate personal connection predicated upon a shared respect for beauty. Each month I host a group of friends for dinner – my passion for gastronomy realised in precious moments of good conversation, music and food.

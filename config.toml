@@ -88,15 +88,15 @@ disqusShortname = ""
     
       [[params.tiles.showcase]]  
       title = "Work"
-      subtitle = "Khayyam"
+      subtitle = "Malmann"
       image = "pic01.jpg"
-      url = "post/khayyam" 
+      url = "post/mallmann" 
       
       [[params.tiles.showcase]] 
       title = "Life"
-      subtitle = "Brunello"
+      subtitle = "Khayyam"
       image = "pic02.jpg"   
-      url = "post/brunello" 
+      url = "post/khayyam" 
       
     [[params.tiles.showcase]]   
      title = "Finance" 
@@ -136,7 +136,7 @@ disqusShortname = ""
   [params.two]
     enable = true
     title = "A Confluence" 
-    subtitle = "I pursue order in an increasingly disordered world. An avid problem solver from a young age, I have always strived to uncover hidden meanings behind everyday interactions and believe that failure is the most critical component of any success. However, until recently I lacked a firm foundation of knowledge from which to identify, analyse and ultimately solve meaningful problems. University College London provided me with the tools and frameworks with which to understand the world around me, from impact evaluation, econometrics and microfinance to election forecasting and public policy implementation. Equity research at Goldman Sachs and Odey Asset Management nurtured my curiosity for markets and the factors which shape them. Strategic projects at Sana Labs, an AI company pioneering personalised education, have empowered me to successfully devise, articulate and execute business strategies. My time at London Business School, undertaking a rigorous applied quantitative analytics M.Sc. programme, represents the confluence of these distinct streams and an incubator for the creation and deployment of world-changing products."
+    subtitle = "I pursue order in our increasingly disordered world. An avid problem solver from a young age, I have always strived to uncover hidden meanings behind everyday interactions and inherently believe that failure is the most critical component of any success. However, until recently I lacked a firm foundation of knowledge from which to identify, analyse and ultimately solve meaningful problems. University College London provided me with the tools and frameworks with which to understand and deconstruct the world around me, from impact evaluation, econometrics and microfinance to election forecasting and public policy implementation. Equity research at Goldman Sachs and Odey Asset Management nurtured my curiosity for markets and the factors which shape them. Strategic projects at Sana Labs, an AI company pioneering personalised education, have empowered me to successfully devise, articulate and execute business strategies. My time at London Business School, undertaking a rigorous applied quantitative analytics M.Sc. programme, represents the confluence of these distinct streams and an incubator for the creation and deployment of world-changing products."
     buttonText = "Work"
     url = "post/khayyam"
 
