@@ -16,7 +16,7 @@ title: Public Health
 
 ## **A Visual Critique of European Government's COVID-19 Response Strategies**
 
-**Note:** *this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.* 
+**Note:** *this was a group project conducted in a team of six. My responsibility was to produce all visualisations and analyses following data cleaning and exploration (Plots 3-6), and to project manage timely, high-quality output. I also set the overarching research questions and authored our final analyses and reflections.* 
 
 ---
  

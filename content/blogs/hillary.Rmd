@@ -16,7 +16,7 @@ title: Travel
 
 ## **A Deep-Dive into Copenhagen's Holiday Rental Market**
 
-**Note:** *this was a group project conducted in a team of three. My responsibility was to produce all visualisations and analyses related to model specification and selection, and to project manage timely, high-quality output. I also proofed and cleaned all the code and authored our final analyses and reflections.*
+**Note:** *this was a group project conducted in a team of six. My responsibility was to produce all visualisations and analyses related to model specification and selection, and to project manage timely, high-quality output. I also proofed and cleaned all the code and authored our final analyses and reflections.*
 
 ---
 
