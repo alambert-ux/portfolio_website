@@ -105,7 +105,7 @@ disqusShortname = ""
      url = "blogs/buffett"
 
       [[params.tiles.showcase]]
-      title = "Entertainment"
+      title = "Media"
       subtitle = "Scorsese"
       image = "pic04.jpg"
       url = "blogs/scorsese"

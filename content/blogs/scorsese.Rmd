@@ -5,7 +5,7 @@ draft: false
 image: pic04.jpg  
 keywords: ""
 slug: scorsese
-title: Entertainment  
+title: Media  
 
 ---
 *"The image in the mind’s eye. For me it’s where the obsession began. It’s what keeps me going, it never fails to excite me. Because you take one shot, you put it together with another shot, and you experience a third image in your mind’s eye that doesn’t really exist in those two other images."*
