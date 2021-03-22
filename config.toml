@@ -52,7 +52,7 @@ disqusShortname = ""
       
     [[params.navigation.links]]
       name = "Life"
-      url = "post/brunello"
+      url = "post/malmann"
 
     [[params.navigation.links]]
       name = "Work"
