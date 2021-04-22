@@ -4,7 +4,7 @@ description: "Life"
 draft: false
 image: pic02.jpg 
 keywords: ""
-slug: khayyam
+slug: khayyam 
 title: Life 
 
 ---
