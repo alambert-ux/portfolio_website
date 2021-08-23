@@ -185,7 +185,7 @@ disqusShortname = ""
     # Uses font awesome icons
     [[params.footer.social]]
       icon = "fa-twitter"
-      url= "https://twitter.com/_AlbertoLambert"
+      url= "https://twitter.com/albertolabs"
       label = "Twitter"
 
     [[params.footer.social]]
